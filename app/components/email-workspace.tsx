@@ -212,23 +212,7 @@ export function EmailWorkspace({
 
       if (!response.ok) {
         throw new Error(data.error ?? "L'envoi a echoue.");
-}
-
-async function readJsonResponse(response: Response) {
-  const text = await response.text();
-
-  if (!text) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return {
-      error: text
-    };
-  }
-}
+      }
 
       setStatus({
         tone: "success",
@@ -384,4 +368,20 @@ async function readJsonResponse(response: Response) {
       </article>
     </section>
   );
+}
+
+async function readJsonResponse(response: Response) {
+  const text = await response.text();
+
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {
+      error: text
+    };
+  }
 }
