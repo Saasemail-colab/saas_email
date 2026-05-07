@@ -77,6 +77,8 @@ Start Command: npm run start
 Node Version: 20
 ```
 
+Si tu gardes la commande Render par defaut `yarn install; yarn build`, le projet fonctionne aussi. Il ne faut simplement pas avoir un champ `packageManager` qui force npm pendant que Render lance Yarn.
+
 Eviter Node 24 pour ce projet. Next.js 14 et plusieurs dependances sont plus stables sur Node 20 LTS.
 
 ## 6. Tester l'API d'envoi
