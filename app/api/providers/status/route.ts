@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { EMAIL_PROVIDER_NAMES, getAvailableProviders, isEmailProviderName } from "@/lib/email/provider";
+import { EMAIL_PROVIDER_NAMES, getAvailableProviders, type ConcreteEmailProviderName } from "@/lib/email/provider";
+import { PROVIDER_CATALOG } from "@/lib/email/provider-catalog";
 
 export function GET() {
   const available = getAvailableProviders();
@@ -8,10 +9,11 @@ export function GET() {
     available,
     providers: EMAIL_PROVIDER_NAMES.map((provider) => ({
       provider,
+      catalog: PROVIDER_CATALOG.find((entry) => entry.provider === provider),
       configured:
         provider === "auto"
           ? available.length > 0
-          : isEmailProviderName(provider) && available.includes(provider),
+          : available.includes(provider as ConcreteEmailProviderName),
       note:
         provider === "auto"
           ? "Auto essaie les providers configures dans l'ordre recommande."

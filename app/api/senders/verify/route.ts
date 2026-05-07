@@ -8,18 +8,19 @@ const verifySenderSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const parsed = verifySenderSchema.safeParse(await request.json());
+  try {
+    const parsed = verifySenderSchema.safeParse(await request.json());
 
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid payload", details: parsed.error.flatten() },
-      { status: 400 }
-    );
-  }
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
 
-  const payload = parsed.data;
-  const domainName = payload.email.split("@")[1].toLowerCase();
-  const supabase = getServerSupabase();
+    const payload = parsed.data;
+    const domainName = payload.email.split("@")[1].toLowerCase();
+    const supabase = getServerSupabase();
 
   const { data: domain, error: domainError } = await supabase
     .from("domains")
@@ -45,11 +46,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Sender not found." }, { status: 404 });
   }
 
-  return NextResponse.json({
-    ok: true,
-    domain,
-    sender,
-    message: "Sender marked as verified locally. The email provider may still reject sends if its own verification is incomplete."
-  });
+    return NextResponse.json({
+      ok: true,
+      domain,
+      sender,
+      message: "Sender marked as verified locally. The email provider may still reject sends if its own verification is incomplete."
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unexpected sender verification error." },
+      { status: 500 }
+    );
+  }
 }
-

@@ -289,6 +289,7 @@ textarea {
 }
 
 .domainRow,
+.orgRow,
 .providerRow {
   display: flex;
   align-items: center;
@@ -298,7 +299,21 @@ textarea {
   padding: 12px;
 }
 
+.orgRow {
+  width: 100%;
+  background: #ffffff;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.orgRow:hover {
+  background: var(--surface-2);
+}
+
 .domainRow strong,
+.orgRow strong,
 .providerRow strong {
   color: var(--amber);
   font-size: 12px;
@@ -307,6 +322,13 @@ textarea {
 
 .providerRow strong[data-configured="true"] {
   color: var(--green);
+}
+
+.providerRow small {
+  color: var(--muted);
+  display: block;
+  font-size: 11px;
+  margin-top: 4px;
 }
 
 .providerList {
@@ -318,6 +340,14 @@ textarea {
 .fullWidthButton {
   margin-top: 12px;
   width: 100%;
+}
+
+.sectionLabel {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 6px;
+  text-transform: uppercase;
 }
 
 .statusPill {

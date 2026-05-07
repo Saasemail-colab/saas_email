@@ -35,10 +35,11 @@ const modules = [
 export default async function HomePage() {
   let domains: Array<{ domain: string; status: string }> | null = null;
   let senders: Array<{ id: string; email: string; display_name: string | null; status: string }> | null = null;
+  let organizations: Array<{ id: string; name: string; plan: string; status: string }> | null = null;
 
   if (hasSupabaseServerEnv()) {
     const supabase = getServerSupabase();
-    const [domainResponse, senderResponse] = await Promise.all([
+    const [domainResponse, senderResponse, organizationResponse] = await Promise.all([
       supabase
         .from("domains")
         .select("domain,status")
@@ -48,11 +49,17 @@ export default async function HomePage() {
         .from("sender_identities")
         .select("id,email,display_name,status")
         .order("created_at", { ascending: false })
-        .limit(8)
+        .limit(8),
+      supabase
+        .from("organizations")
+        .select("id,name,plan,status")
+        .order("created_at", { ascending: false })
+        .limit(10)
     ]);
 
     domains = domainResponse.data;
     senders = senderResponse.data;
+    organizations = organizationResponse.data;
   }
 
   return (
@@ -97,6 +104,18 @@ export default async function HomePage() {
 
         <EmailWorkspace
           initialDomains={domains?.length ? domains : [{ domain: "exemple.com", status: "pending" }]}
+          initialOrganizations={
+            organizations?.length
+              ? organizations
+              : [
+                  {
+                    id: "00000000-0000-0000-0000-000000000001",
+                    name: "Organisation EmailOps",
+                    plan: "starter",
+                    status: "active"
+                  }
+                ]
+          }
           initialSenders={
             senders?.length
               ? senders

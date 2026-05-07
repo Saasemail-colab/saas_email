@@ -18,6 +18,19 @@ type ProviderStatus = {
   provider: string;
   configured: boolean;
   note: string;
+  catalog?: {
+    label: string;
+    envKeys: string[];
+    senderSetup: string;
+    dnsNotes: string[];
+  };
+};
+
+type OrganizationRow = {
+  id: string;
+  name: string;
+  plan: string;
+  status: string;
 };
 
 const providers = ["auto", "resend", "smtp", "sendgrid", "mailgun", "postmark", "brevo", "mailersend"] as const;
@@ -27,12 +40,16 @@ const defaultOrganizationId =
 
 export function EmailWorkspace({
   initialDomains,
-  initialSenders
+  initialSenders,
+  initialOrganizations
 }: {
   initialDomains: DomainRow[];
   initialSenders: SenderRow[];
+  initialOrganizations: OrganizationRow[];
 }) {
   const [organizationId, setOrganizationId] = useState(defaultOrganizationId);
+  const [organizationName, setOrganizationName] = useState("Organisation EmailOps");
+  const [organizations, setOrganizations] = useState(initialOrganizations);
   const [provider, setProvider] = useState<(typeof providers)[number]>("auto");
   const [from, setFrom] = useState(initialSenders[0]?.email ?? "support@votre-domaine.com");
   const [displayName, setDisplayName] = useState(initialSenders[0]?.display_name ?? "Support");
@@ -70,6 +87,64 @@ export function EmailWorkspace({
       setStatus({
         tone: "error",
         text: error instanceof Error ? error.message : "Erreur pendant le chargement."
+      });
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
+  async function loadOrganizations() {
+    setLoadingAction("load");
+    setStatus({ tone: "info", text: "Chargement des organisations..." });
+
+    try {
+      const response = await fetch("/api/organizations");
+      const data = await readJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Impossible de charger les organisations.");
+      }
+
+      setOrganizations(data.organizations ?? []);
+      setStatus({ tone: "success", text: "Organisations chargees." });
+    } catch (error) {
+      setStatus({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Erreur pendant le chargement des organisations."
+      });
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
+  async function saveOrganization() {
+    setLoadingAction("register");
+    setStatus({ tone: "info", text: "Enregistrement de l'organisation..." });
+
+    try {
+      const response = await fetch("/api/organizations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: organizationId,
+          name: organizationName
+        })
+      });
+      const data = await readJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Impossible d'enregistrer l'organisation.");
+      }
+
+      setOrganizations((current: OrganizationRow[]) => {
+        const withoutCurrent = current.filter((organization) => organization.id !== data.organization.id);
+        return [data.organization, ...withoutCurrent];
+      });
+      setStatus({ tone: "success", text: "Organisation enregistree." });
+    } catch (error) {
+      setStatus({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Erreur pendant l'enregistrement de l'organisation."
       });
     } finally {
       setLoadingAction(null);
@@ -123,11 +198,11 @@ export function EmailWorkspace({
         throw new Error(data.error ?? "Impossible d'enregistrer cet expediteur.");
       }
 
-      setSenders((current) => {
+      setSenders((current: SenderRow[]) => {
         const withoutCurrent = current.filter((sender) => sender.email !== data.sender.email);
         return [data.sender, ...withoutCurrent];
       });
-      setDomains((current) => {
+      setDomains((current: DomainRow[]) => {
         const withoutCurrent = current.filter((domain) => domain.domain !== data.domain.domain);
         return [data.domain, ...withoutCurrent];
       });
@@ -166,11 +241,11 @@ export function EmailWorkspace({
         throw new Error(data.error ?? "Impossible de verifier cet expediteur.");
       }
 
-      setSenders((current) => {
+      setSenders((current: SenderRow[]) => {
         const withoutCurrent = current.filter((sender) => sender.email !== data.sender.email);
         return [data.sender, ...withoutCurrent];
       });
-      setDomains((current) => {
+      setDomains((current: DomainRow[]) => {
         const withoutCurrent = current.filter((domain) => domain.domain !== data.domain.domain);
         return [data.domain, ...withoutCurrent];
       });
@@ -200,7 +275,7 @@ export function EmailWorkspace({
           organizationId,
           provider,
           from,
-          to: to.split(",").map((recipient) => recipient.trim()).filter(Boolean),
+          to: to.split(",").map((recipient: string) => recipient.trim()).filter(Boolean),
           subject,
           html,
           text,
@@ -247,6 +322,10 @@ export function EmailWorkspace({
               onChange={(event) => setOrganizationId(event.target.value)}
               onBlur={() => loadSenders()}
             />
+          </label>
+          <label>
+            Nom organisation
+            <input value={organizationName} onChange={(event) => setOrganizationName(event.target.value)} />
           </label>
           <label>
             Provider
@@ -301,6 +380,9 @@ export function EmailWorkspace({
           </label>
 
           <div className="buttonRow full">
+            <button type="button" className="secondaryButton" onClick={saveOrganization} disabled={loadingAction !== null}>
+              Enregistrer organisation
+            </button>
             <button type="button" className="secondaryButton" onClick={registerSender} disabled={loadingAction !== null}>
               {loadingAction === "register" ? "Enregistrement..." : "Ajouter l'expediteur"}
             </button>
@@ -327,6 +409,29 @@ export function EmailWorkspace({
           </button>
         </div>
         <div className="domainList">
+          <div className="sectionLabel">Organisations</div>
+          {(organizations.length
+            ? organizations
+            : [{ id: organizationId, name: "Organisation EmailOps", plan: "starter", status: "active" }]
+          ).map((organization: OrganizationRow) => (
+            <button
+              className="orgRow"
+              key={organization.id}
+              type="button"
+              onClick={() => {
+                setOrganizationId(organization.id);
+                setOrganizationName(organization.name);
+                loadSenders(organization.id);
+              }}
+            >
+              <span>{organization.name}</span>
+              <strong>{organization.status}</strong>
+            </button>
+          ))}
+          <button className="secondaryButton fullWidthButton" type="button" onClick={loadOrganizations} disabled={loadingAction !== null}>
+            Charger organisations
+          </button>
+          <div className="sectionLabel">Domaines</div>
           {(domains.length ? domains : [{ domain: "exemple.com", status: "pending" }]).map((domain) => (
             <div className="domainRow" key={domain.domain}>
               <span>{domain.domain}</span>
@@ -341,7 +446,10 @@ export function EmailWorkspace({
           <div className="providerList">
             {providerStatuses.map((item) => (
               <div className="providerRow" key={item.provider}>
-                <span>{item.provider}</span>
+                <div>
+                  <span>{item.catalog?.label ?? item.provider}</span>
+                  <small>{item.catalog?.envKeys?.join(", ") ?? item.note}</small>
+                </div>
                 <strong data-configured={item.configured}>{item.configured ? "pret" : "manquant"}</strong>
               </div>
             ))}
