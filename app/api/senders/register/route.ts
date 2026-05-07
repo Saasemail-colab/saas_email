@@ -13,29 +13,47 @@ const registerSenderSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const parsed = registerSenderSchema.safeParse(await request.json());
+  try {
+    const parsed = registerSenderSchema.safeParse(await request.json());
 
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid payload", details: parsed.error.flatten() },
-      { status: 400 }
-    );
-  }
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
 
-  const payload = parsed.data;
-  const domainName = payload.email.split("@")[1].toLowerCase();
-  const supabase = getServerSupabase();
-  const providerSetup = payload.configureProvider
-    ? await setupSenderDomain(payload.provider, domainName).catch((error) => ({
-        provider: payload.provider,
-        status: "manual" as const,
-        message: error instanceof Error ? error.message : "Provider setup failed."
-      }))
-    : {
-        provider: payload.provider,
-        status: "skipped" as const,
-        message: "Provider setup skipped."
-      };
+    const payload = parsed.data;
+    const domainName = payload.email.split("@")[1].toLowerCase();
+    const supabase = getServerSupabase();
+
+    const { error: organizationError } = await supabase
+      .from("organizations")
+      .upsert(
+        {
+          id: payload.organizationId,
+          name: "Organisation EmailOps",
+          plan: "starter",
+          status: "active"
+        },
+        { onConflict: "id" }
+      );
+
+    if (organizationError) {
+      return NextResponse.json({ error: "Unable to create organization." }, { status: 500 });
+    }
+
+    const providerSetup = payload.configureProvider
+      ? await setupSenderDomain(payload.provider, domainName).catch((error) => ({
+          provider: payload.provider,
+          status: "manual" as const,
+          message: error instanceof Error ? error.message : "Provider setup failed."
+        }))
+      : {
+          provider: payload.provider,
+          status: "skipped" as const,
+          message: "Provider setup skipped."
+        };
 
   const { data: existingDomain } = await supabase
     .from("domains")
@@ -91,13 +109,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unable to register sender." }, { status: 500 });
   }
 
-  return NextResponse.json({
-    ok: true,
-    domain,
-    sender,
-    providerSetup,
-    nextStep: "Verify this domain in your email provider and DNS, then set domain and sender status to verified."
-  });
+    return NextResponse.json({
+      ok: true,
+      domain,
+      sender,
+      providerSetup,
+      nextStep: "Verify this domain in your email provider and DNS, then set domain and sender status to verified."
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unexpected sender registration error." },
+      { status: 500 }
+    );
+  }
 }
 
 export async function GET(request: Request) {

@@ -47,6 +47,7 @@ Valeurs possibles:
 
 ```bash
 EMAIL_PROVIDER=resend
+EMAIL_PROVIDER=auto
 EMAIL_PROVIDER=smtp
 EMAIL_PROVIDER=sendgrid
 EMAIL_PROVIDER=mailgun

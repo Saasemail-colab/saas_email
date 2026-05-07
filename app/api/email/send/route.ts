@@ -16,18 +16,19 @@ const sendEmailSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const parsed = sendEmailSchema.safeParse(await request.json());
+  try {
+    const parsed = sendEmailSchema.safeParse(await request.json());
 
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid payload", details: parsed.error.flatten() },
-      { status: 400 }
-    );
-  }
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
 
-  const payload = parsed.data;
-  const recipients = Array.isArray(payload.to) ? payload.to : [payload.to];
-  const supabase = getServerSupabase();
+    const payload = parsed.data;
+    const recipients = Array.isArray(payload.to) ? payload.to : [payload.to];
+    const supabase = getServerSupabase();
 
   const { data: sender, error: senderError } = await supabase
     .from("sender_identities")
@@ -151,10 +152,16 @@ export async function POST(request: Request) {
     })
     .eq("id", message.id);
 
-  return NextResponse.json({
-    ok: true,
-    messageId: message.id,
-    provider: result.provider,
-    providerMessageId: result.providerMessageId
-  });
+    return NextResponse.json({
+      ok: true,
+      messageId: message.id,
+      provider: result.provider,
+      providerMessageId: result.providerMessageId
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unexpected send error." },
+      { status: 500 }
+    );
+  }
 }

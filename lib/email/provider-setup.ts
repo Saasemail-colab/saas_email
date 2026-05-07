@@ -1,4 +1,4 @@
-import { EMAIL_PROVIDER_NAMES, type EmailProviderName } from "@/lib/email/provider";
+import { EMAIL_PROVIDER_NAMES, getAvailableProviders, type EmailProviderName } from "@/lib/email/provider";
 
 export type ProviderSetupResult = {
   provider: EmailProviderName;
@@ -26,11 +26,42 @@ export async function setupSenderDomain(provider: EmailProviderName, domain: str
     return setupMailgunDomain(domain);
   }
 
+  if (provider === "auto") {
+    return setupAutoDomain(domain);
+  }
+
   return {
     provider,
     status: "manual",
     message:
       "Ce provider demande une verification dans son dashboard ou via une configuration specifique. Le domaine a ete enregistre en pending dans Supabase."
+  };
+}
+
+async function setupAutoDomain(domain: string): Promise<ProviderSetupResult> {
+  const providers = getAvailableProviders();
+  const results: ProviderSetupResult[] = [];
+
+  for (const provider of providers) {
+    if (provider === "resend" || provider === "mailgun") {
+      results.push(await setupSenderDomain(provider, domain));
+    }
+  }
+
+  if (!results.length) {
+    return {
+      provider: "auto",
+      status: "manual",
+      message:
+        "Aucun provider configurable automatiquement n'a de cle API. Ajoute RESEND_API_KEY ou MAILGUN_API_KEY, ou configure le domaine manuellement."
+    };
+  }
+
+  return {
+    provider: "auto",
+    status: results.some((result) => result.status === "created") ? "created" : "manual",
+    message: results.map((result) => `${result.provider}: ${result.message}`).join(" | "),
+    raw: results
   };
 }
 
@@ -124,4 +155,3 @@ async function safeJson(response: Response) {
     return text;
   }
 }
-

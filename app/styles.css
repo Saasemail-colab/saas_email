@@ -288,7 +288,8 @@ textarea {
   gap: 10px;
 }
 
-.domainRow {
+.domainRow,
+.providerRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -297,10 +298,26 @@ textarea {
   padding: 12px;
 }
 
-.domainRow strong {
+.domainRow strong,
+.providerRow strong {
   color: var(--amber);
   font-size: 12px;
   text-transform: uppercase;
+}
+
+.providerRow strong[data-configured="true"] {
+  color: var(--green);
+}
+
+.providerList {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fullWidthButton {
+  margin-top: 12px;
+  width: 100%;
 }
 
 .statusPill {

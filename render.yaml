@@ -19,7 +19,7 @@ services:
       - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_PROVIDER
-        value: resend
+        value: auto
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT

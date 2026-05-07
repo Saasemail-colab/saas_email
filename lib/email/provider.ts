@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import nodemailer from "nodemailer";
 
 export const EMAIL_PROVIDER_NAMES = [
+  "auto",
   "resend",
   "smtp",
   "sendgrid",
@@ -13,6 +14,8 @@ export const EMAIL_PROVIDER_NAMES = [
 
 export type EmailProviderName =
   (typeof EMAIL_PROVIDER_NAMES)[number];
+
+export type ConcreteEmailProviderName = Exclude<EmailProviderName, "auto">;
 
 export type SendEmailInput = {
   provider?: EmailProviderName;
@@ -26,7 +29,7 @@ export type SendEmailInput = {
 };
 
 export type SendEmailResult = {
-  provider: EmailProviderName;
+  provider: ConcreteEmailProviderName;
   providerMessageId?: string;
 };
 
@@ -53,6 +56,10 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     name: input.provider ?? getEmailProviderName()
   };
 
+  if (config.name === "auto") {
+    return sendWithFirstAvailableProvider(input);
+  }
+
   if (config.name === "resend") {
     return sendWithResend(input);
   }
@@ -78,6 +85,59 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   }
 
   return sendWithMailerSend(input);
+}
+
+export function getAvailableProviders(): ConcreteEmailProviderName[] {
+  const providers: ConcreteEmailProviderName[] = [];
+
+  if (process.env.RESEND_API_KEY) {
+    providers.push("resend");
+  }
+
+  if (process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
+    providers.push("mailgun");
+  }
+
+  if (process.env.POSTMARK_SERVER_TOKEN) {
+    providers.push("postmark");
+  }
+
+  if (process.env.SENDGRID_API_KEY) {
+    providers.push("sendgrid");
+  }
+
+  if (process.env.BREVO_API_KEY) {
+    providers.push("brevo");
+  }
+
+  if (process.env.MAILERSEND_API_KEY) {
+    providers.push("mailersend");
+  }
+
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    providers.push("smtp");
+  }
+
+  return providers;
+}
+
+async function sendWithFirstAvailableProvider(input: SendEmailInput): Promise<SendEmailResult> {
+  const providers = getAvailableProviders();
+  const errors: string[] = [];
+
+  for (const provider of providers) {
+    try {
+      return await sendEmail({ ...input, provider });
+    } catch (error) {
+      errors.push(`${provider}: ${error instanceof Error ? error.message : "failed"}`);
+    }
+  }
+
+  throw new Error(
+    errors.length
+      ? `No email provider succeeded. ${errors.join(" | ")}`
+      : "No email provider is configured. Add at least one provider API key on Render."
+  );
 }
 
 async function sendWithResend(input: SendEmailInput): Promise<SendEmailResult> {

@@ -14,7 +14,13 @@ type SenderRow = {
   status: string;
 };
 
-const providers = ["resend", "smtp", "sendgrid", "mailgun", "postmark", "brevo", "mailersend"] as const;
+type ProviderStatus = {
+  provider: string;
+  configured: boolean;
+  note: string;
+};
+
+const providers = ["auto", "resend", "smtp", "sendgrid", "mailgun", "postmark", "brevo", "mailersend"] as const;
 
 const defaultOrganizationId =
   process.env.NEXT_PUBLIC_DEFAULT_ORGANIZATION_ID ?? "00000000-0000-0000-0000-000000000001";
@@ -27,7 +33,7 @@ export function EmailWorkspace({
   initialSenders: SenderRow[];
 }) {
   const [organizationId, setOrganizationId] = useState(defaultOrganizationId);
-  const [provider, setProvider] = useState<(typeof providers)[number]>("resend");
+  const [provider, setProvider] = useState<(typeof providers)[number]>("auto");
   const [from, setFrom] = useState(initialSenders[0]?.email ?? "support@votre-domaine.com");
   const [displayName, setDisplayName] = useState(initialSenders[0]?.display_name ?? "Support");
   const [to, setTo] = useState("client@example.com");
@@ -37,6 +43,7 @@ export function EmailWorkspace({
   const [audience, setAudience] = useState<"transactional" | "marketing">("transactional");
   const [senders, setSenders] = useState(initialSenders);
   const [domains, setDomains] = useState(initialDomains);
+  const [providerStatuses, setProviderStatuses] = useState<ProviderStatus[]>([]);
   const [status, setStatus] = useState<{ tone: "info" | "success" | "error"; text: string } | null>(null);
   const [loadingAction, setLoadingAction] = useState<"register" | "send" | "load" | null>(null);
 
@@ -51,7 +58,7 @@ export function EmailWorkspace({
 
     try {
       const response = await fetch(`/api/senders/register?organizationId=${encodeURIComponent(nextOrganizationId)}`);
-      const data = await response.json();
+      const data = await readJsonResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error ?? "Impossible de charger les expediteurs.");
@@ -63,6 +70,31 @@ export function EmailWorkspace({
       setStatus({
         tone: "error",
         text: error instanceof Error ? error.message : "Erreur pendant le chargement."
+      });
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
+  async function detectProviders() {
+    setLoadingAction("load");
+    setStatus({ tone: "info", text: "Detection des providers configures..." });
+
+    try {
+      const response = await fetch("/api/providers/status");
+      const data = await readJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Impossible de detecter les providers.");
+      }
+
+      setProviderStatuses(data.providers ?? []);
+      const available = data.available?.length ? data.available.join(", ") : "aucun";
+      setStatus({ tone: data.available?.length ? "success" : "error", text: `Providers disponibles: ${available}` });
+    } catch (error) {
+      setStatus({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Erreur pendant la detection."
       });
     } finally {
       setLoadingAction(null);
@@ -85,7 +117,7 @@ export function EmailWorkspace({
           configureProvider: true
         })
       });
-      const data = await response.json();
+      const data = await readJsonResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error ?? "Impossible d'enregistrer cet expediteur.");
@@ -128,7 +160,7 @@ export function EmailWorkspace({
           email: from
         })
       });
-      const data = await response.json();
+      const data = await readJsonResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error ?? "Impossible de verifier cet expediteur.");
@@ -176,11 +208,27 @@ export function EmailWorkspace({
           replyTo: from
         })
       });
-      const data = await response.json();
+      const data = await readJsonResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error ?? "L'envoi a echoue.");
-      }
+}
+
+async function readJsonResponse(response: Response) {
+  const text = await response.text();
+
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {
+      error: text
+    };
+  }
+}
 
       setStatus({
         tone: "success",
@@ -302,6 +350,19 @@ export function EmailWorkspace({
             </div>
           ))}
         </div>
+        <button className="secondaryButton fullWidthButton" type="button" onClick={detectProviders} disabled={loadingAction !== null}>
+          Detecter providers
+        </button>
+        {providerStatuses.length ? (
+          <div className="providerList">
+            {providerStatuses.map((item) => (
+              <div className="providerRow" key={item.provider}>
+                <span>{item.provider}</span>
+                <strong data-configured={item.configured}>{item.configured ? "pret" : "manquant"}</strong>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </article>
 
       <article id="api" className="panel">
