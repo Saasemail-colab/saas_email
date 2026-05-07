@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { sendEmail } from "@/lib/email/provider";
+import { EMAIL_PROVIDER_NAMES, sendEmail } from "@/lib/email/provider";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 const sendEmailSchema = z.object({
   organizationId: z.string().uuid(),
+  provider: z.enum(EMAIL_PROVIDER_NAMES).optional(),
   from: z.string().email(),
   to: z.union([z.string().email(), z.array(z.string().email()).min(1)]),
   subject: z.string().min(1).max(200),
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
       html_body: payload.html,
       text_body: payload.text ?? null,
       status: "queued",
-      provider: process.env.EMAIL_PROVIDER ?? "resend"
+      provider: payload.provider ?? process.env.EMAIL_PROVIDER ?? "resend"
     })
     .select("id")
     .single();
@@ -114,6 +115,7 @@ export async function POST(request: Request) {
 
   try {
     result = await sendEmail({
+      provider: payload.provider,
       from: payload.from,
       to: recipients,
       subject: payload.subject,

@@ -19,6 +19,10 @@ Le backend supporte actuellement:
 - `resend`;
 - `smtp`;
 - `sendgrid`.
+- `mailgun`;
+- `postmark`;
+- `brevo`;
+- `mailersend`.
 
 Le mode SMTP permet de connecter beaucoup de fournisseurs:
 
@@ -45,6 +49,10 @@ Valeurs possibles:
 EMAIL_PROVIDER=resend
 EMAIL_PROVIDER=smtp
 EMAIL_PROVIDER=sendgrid
+EMAIL_PROVIDER=mailgun
+EMAIL_PROVIDER=postmark
+EMAIL_PROVIDER=brevo
+EMAIL_PROVIDER=mailersend
 ```
 
 ## Resend
@@ -71,6 +79,36 @@ EMAIL_PROVIDER=sendgrid
 SENDGRID_API_KEY=SG.xxxxxxxxx
 ```
 
+## Mailgun API
+
+```bash
+EMAIL_PROVIDER=mailgun
+MAILGUN_API_KEY=key-xxxxxxxxx
+MAILGUN_DOMAIN=mg.votre-domaine.com
+MAILGUN_BASE_URL=https://api.mailgun.net
+```
+
+## Postmark API
+
+```bash
+EMAIL_PROVIDER=postmark
+POSTMARK_SERVER_TOKEN=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+## Brevo API
+
+```bash
+EMAIL_PROVIDER=brevo
+BREVO_API_KEY=xkeysib-xxxxxxxxx
+```
+
+## MailerSend API
+
+```bash
+EMAIL_PROVIDER=mailersend
+MAILERSEND_API_KEY=mlsn.xxxxxxxxx
+```
+
 ## Regle expediteur
 
 Avant envoi, l'API verifie:
@@ -88,6 +126,45 @@ Donc on peut envoyer depuis:
 - toute adresse professionnelle valide.
 
 Mais on ne peut pas envoyer depuis une adresse non controlee comme `quelquun@gmail.com`, sauf si ce fournisseur permet une verification officielle et que l'adresse est ajoutee comme identite verifiee.
+
+## Ajouter un expediteur au choix
+
+L'utilisateur peut saisir l'adresse expediteur qu'il veut:
+
+```bash
+POST /api/senders/register
+```
+
+```json
+{
+  "organizationId": "ORG_ID",
+  "email": "support@votre-domaine.com",
+  "displayName": "Support"
+}
+```
+
+Le systeme cree:
+
+- le domaine en `pending`;
+- l'expediteur en `pending`.
+
+Ensuite il faut verifier le domaine dans le provider choisi et dans les DNS. Une fois verifie, passer le domaine et l'expediteur en `verified`.
+
+## Choisir le provider par requete
+
+L'API peut utiliser le provider global `EMAIL_PROVIDER`, ou recevoir un provider:
+
+```json
+{
+  "organizationId": "ORG_ID",
+  "provider": "mailgun",
+  "from": "support@votre-domaine.com",
+  "to": "client@gmail.com",
+  "subject": "Bonjour",
+  "html": "<p>Message</p>",
+  "text": "Message"
+}
+```
 
 ## Destinataires
 

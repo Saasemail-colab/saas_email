@@ -2,6 +2,11 @@
   "name": "email-saas-platform",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.9.0",
+  "engines": {
+    "node": "20.x",
+    "npm": ">=10"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -24,7 +29,7 @@
     "@types/react-dom": "^18.3.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.5",
-    "typescript": "^5.5.3",
-    "@types/nodemailer": "^6.4.15"
+    "@types/nodemailer": "^6.4.15",
+    "typescript": "^5.5.3"
   }
 }

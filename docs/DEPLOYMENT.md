@@ -35,6 +35,17 @@ RESEND_API_KEY=re_xxxxxxxxx
 DEFAULT_FROM_EMAIL=no-reply@your-verified-domain.com
 NEXT_PUBLIC_APP_URL=https://your-app-url.com
 EMAIL_PROVIDER=resend
+RESEND_API_KEY=re_xxxxxxxxx
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your-smtp-user
+SMTP_PASS=your-smtp-password
+SENDGRID_API_KEY=SG.xxxxxxxxx
+MAILGUN_API_KEY=key-xxxxxxxxx
+MAILGUN_DOMAIN=mg.your-verified-domain.com
+POSTMARK_SERVER_TOKEN=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+BREVO_API_KEY=xkeysib-xxxxxxxxx
+MAILERSEND_API_KEY=mlsn.xxxxxxxxx
 ```
 
 ## 4. Deploiement Railway
@@ -57,6 +68,16 @@ npm run start
 2. Render detecte `render.yaml`.
 3. Renseigner les variables marquees `sync: false`.
 4. Deploy.
+
+Si Render utilise les commandes du dashboard au lieu de `render.yaml`, regler:
+
+```bash
+Build Command: npm install && npm run build
+Start Command: npm run start
+Node Version: 20
+```
+
+Eviter Node 24 pour ce projet. Next.js 14 et plusieurs dependances sont plus stables sur Node 20 LTS.
 
 ## 6. Tester l'API d'envoi
 

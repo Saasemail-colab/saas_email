@@ -144,6 +144,7 @@ export default async function HomePage() {
             <pre className="codeBlock">{`POST /api/email/send
 {
   "organizationId": "uuid-organisation",
+  "provider": "resend",
   "from": "support@domaine.com",
   "to": "client@example.com",
   "subject": "Bonjour",

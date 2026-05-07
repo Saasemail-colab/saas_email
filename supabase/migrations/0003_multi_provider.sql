@@ -4,7 +4,7 @@ create table if not exists public.email_provider_accounts (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
   name text not null,
-  provider text not null check (provider in ('resend', 'smtp', 'sendgrid', 'mailgun', 'postmark', 'ses')),
+  provider text not null check (provider in ('resend', 'smtp', 'sendgrid', 'mailgun', 'postmark', 'brevo', 'mailersend', 'ses')),
   status text not null default 'active' check (status in ('active', 'paused', 'disabled')),
   config jsonb not null default '{}',
   created_at timestamptz not null default now(),
@@ -18,4 +18,3 @@ alter table public.sender_identities
 
 create index if not exists email_provider_accounts_org_provider_idx
   on public.email_provider_accounts (organization_id, provider, status);
-

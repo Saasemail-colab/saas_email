@@ -8,6 +8,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: 20
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -16,8 +18,31 @@ services:
         sync: false
       - key: RESEND_API_KEY
         sync: false
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: MAILGUN_API_KEY
+        sync: false
+      - key: MAILGUN_DOMAIN
+        sync: false
+      - key: MAILGUN_BASE_URL
+        sync: false
+      - key: POSTMARK_SERVER_TOKEN
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: MAILERSEND_API_KEY
+        sync: false
       - key: DEFAULT_FROM_EMAIL
         sync: false
       - key: NEXT_PUBLIC_APP_URL
         sync: false
-
