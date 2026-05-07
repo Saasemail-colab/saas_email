@@ -138,8 +138,10 @@ POST /api/senders/register
 ```json
 {
   "organizationId": "ORG_ID",
+  "provider": "resend",
   "email": "support@votre-domaine.com",
-  "displayName": "Support"
+  "displayName": "Support",
+  "configureProvider": true
 }
 ```
 
@@ -149,6 +151,29 @@ Le systeme cree:
 - l'expediteur en `pending`.
 
 Ensuite il faut verifier le domaine dans le provider choisi et dans les DNS. Une fois verifie, passer le domaine et l'expediteur en `verified`.
+
+L'interface propose aussi un bouton `Marquer verified`, qui appelle:
+
+```bash
+POST /api/senders/verify
+```
+
+```json
+{
+  "organizationId": "ORG_ID",
+  "email": "support@votre-domaine.com"
+}
+```
+
+Important: ce bouton marque l'etat local dans Supabase. Le fournisseur email peut encore refuser l'envoi si le domaine n'est pas vraiment verifie chez lui.
+
+## Setup provider direct
+
+Quand `configureProvider` vaut `true`, le backend tente une configuration directe:
+
+- Resend: creation du domaine via API Resend;
+- Mailgun: creation du domaine via API Mailgun;
+- autres providers: retour d'instructions manuelles, car la verification depend du dashboard/provider.
 
 ## Choisir le provider par requete
 

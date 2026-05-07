@@ -1,4 +1,5 @@
-import { Activity, ArrowRight, CheckCircle2, Inbox, KeyRound, MailPlus, ShieldCheck } from "lucide-react";
+import { Activity, ArrowRight, Inbox, MailPlus, ShieldCheck } from "lucide-react";
+import { EmailWorkspace } from "@/app/components/email-workspace";
 import { getServerSupabase, hasSupabaseServerEnv } from "@/lib/supabase/server";
 
 const metrics = [
@@ -33,16 +34,25 @@ const modules = [
 
 export default async function HomePage() {
   let domains: Array<{ domain: string; status: string }> | null = null;
+  let senders: Array<{ id: string; email: string; display_name: string | null; status: string }> | null = null;
 
   if (hasSupabaseServerEnv()) {
     const supabase = getServerSupabase();
-    const response = await supabase
-      .from("domains")
-      .select("domain,status")
-      .order("created_at", { ascending: false })
-      .limit(4);
+    const [domainResponse, senderResponse] = await Promise.all([
+      supabase
+        .from("domains")
+        .select("domain,status")
+        .order("created_at", { ascending: false })
+        .limit(6),
+      supabase
+        .from("sender_identities")
+        .select("id,email,display_name,status")
+        .order("created_at", { ascending: false })
+        .limit(8)
+    ]);
 
-    domains = response.data;
+    domains = domainResponse.data;
+    senders = senderResponse.data;
   }
 
   return (
@@ -85,73 +95,21 @@ export default async function HomePage() {
           ))}
         </section>
 
-        <section className="contentGrid">
-          <article id="send" className="panel wide">
-            <div className="panelHeader">
-              <div>
-                <p className="eyebrow">Composer</p>
-                <h2>Envoi controle</h2>
-              </div>
-              <CheckCircle2 size={20} />
-            </div>
-            <form className="composeForm">
-              <label>
-                Expediteur verifie
-                <input value="support@votre-domaine.com" readOnly />
-              </label>
-              <label>
-                Destinataire
-                <input placeholder="client@example.com" />
-              </label>
-              <label>
-                Sujet
-                <input placeholder="Bienvenue sur notre plateforme" />
-              </label>
-              <label className="full">
-                Message
-                <textarea placeholder="Bonjour, votre compte est pret..." rows={6} />
-              </label>
-              <button type="button">Envoyer le test</button>
-            </form>
-          </article>
-
-          <article id="domains" className="panel">
-            <div className="panelHeader">
-              <div>
-                <p className="eyebrow">DNS</p>
-                <h2>Domaines</h2>
-              </div>
-              <ShieldCheck size={20} />
-            </div>
-            <div className="domainList">
-              {(domains?.length ? domains : [{ domain: "exemple.com", status: "pending" }]).map((domain) => (
-                <div className="domainRow" key={domain.domain}>
-                  <span>{domain.domain}</span>
-                  <strong>{domain.status}</strong>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article id="api" className="panel">
-            <div className="panelHeader">
-              <div>
-                <p className="eyebrow">Developpeurs</p>
-                <h2>API</h2>
-              </div>
-              <KeyRound size={20} />
-            </div>
-            <pre className="codeBlock">{`POST /api/email/send
-{
-  "organizationId": "uuid-organisation",
-  "provider": "resend",
-  "from": "support@domaine.com",
-  "to": "client@example.com",
-  "subject": "Bonjour",
-  "html": "<p>Message</p>"
-}`}</pre>
-          </article>
-        </section>
+        <EmailWorkspace
+          initialDomains={domains?.length ? domains : [{ domain: "exemple.com", status: "pending" }]}
+          initialSenders={
+            senders?.length
+              ? senders
+              : [
+                  {
+                    id: "demo-sender",
+                    email: "support@votre-domaine.com",
+                    display_name: "Support",
+                    status: "pending"
+                  }
+                ]
+          }
+        />
 
         <section id="inbox" className="moduleGrid">
           {modules.map((module) => {

@@ -129,7 +129,9 @@ h3 {
 }
 
 .primaryButton,
-.composeForm button {
+.composeForm button,
+.secondaryButton,
+.iconButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -148,6 +150,31 @@ h3 {
 .primaryButton:hover,
 .composeForm button:hover {
   background: var(--primary-dark);
+}
+
+.composeForm button:disabled,
+.secondaryButton:disabled,
+.iconButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.secondaryButton,
+.iconButton {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.secondaryButton:hover,
+.iconButton:hover {
+  background: var(--surface-2);
+}
+
+.iconButton {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 12px;
 }
 
 .metricGrid,
@@ -233,13 +260,19 @@ label {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
+  background: #ffffff;
   color: var(--text);
   font: inherit;
   padding: 11px 12px;
+}
+
+select {
+  cursor: pointer;
 }
 
 textarea {
@@ -268,6 +301,51 @@ textarea {
   color: var(--amber);
   font-size: 12px;
   text-transform: uppercase;
+}
+
+.statusPill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  text-transform: uppercase;
+}
+
+.buttonRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.formStatus {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: 16px;
+  padding: 12px;
+}
+
+.formStatus[data-tone="success"] {
+  border-color: rgba(21, 128, 61, 0.25);
+  background: rgba(21, 128, 61, 0.08);
+  color: var(--green);
+}
+
+.formStatus[data-tone="error"] {
+  border-color: rgba(185, 28, 28, 0.25);
+  background: rgba(185, 28, 28, 0.08);
+  color: var(--red);
+}
+
+.formStatus[data-tone="info"] {
+  border-color: rgba(37, 99, 235, 0.25);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--primary-dark);
 }
 
 .codeBlock {
@@ -338,5 +416,9 @@ textarea {
   .composeForm {
     grid-template-columns: 1fr;
   }
-}
 
+  .buttonRow {
+    align-items: stretch;
+    display: grid;
+  }
+}

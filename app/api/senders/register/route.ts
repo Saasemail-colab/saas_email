@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { EMAIL_PROVIDER_NAMES } from "@/lib/email/provider";
+import { setupSenderDomain } from "@/lib/email/provider-setup";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 const registerSenderSchema = z.object({
   organizationId: z.string().uuid(),
+  provider: z.enum(EMAIL_PROVIDER_NAMES).default("resend"),
   email: z.string().email(),
-  displayName: z.string().min(1).max(80).optional()
+  displayName: z.string().min(1).max(80).optional(),
+  configureProvider: z.boolean().default(true)
 });
 
 export async function POST(request: Request) {
@@ -21,6 +25,26 @@ export async function POST(request: Request) {
   const payload = parsed.data;
   const domainName = payload.email.split("@")[1].toLowerCase();
   const supabase = getServerSupabase();
+  const providerSetup = payload.configureProvider
+    ? await setupSenderDomain(payload.provider, domainName).catch((error) => ({
+        provider: payload.provider,
+        status: "manual" as const,
+        message: error instanceof Error ? error.message : "Provider setup failed."
+      }))
+    : {
+        provider: payload.provider,
+        status: "skipped" as const,
+        message: "Provider setup skipped."
+      };
+
+  const { data: existingDomain } = await supabase
+    .from("domains")
+    .select("id,domain,status")
+    .eq("organization_id", payload.organizationId)
+    .eq("domain", domainName)
+    .maybeSingle();
+
+  const domainStatus = existingDomain?.status === "verified" ? "verified" : "pending";
 
   const { data: domain, error: domainError } = await supabase
     .from("domains")
@@ -28,7 +52,7 @@ export async function POST(request: Request) {
       {
         organization_id: payload.organizationId,
         domain: domainName,
-        status: "pending"
+        status: domainStatus
       },
       { onConflict: "organization_id,domain" }
     )
@@ -39,6 +63,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unable to register domain." }, { status: 500 });
   }
 
+  const { data: existingSender } = await supabase
+    .from("sender_identities")
+    .select("id,email,status")
+    .eq("organization_id", payload.organizationId)
+    .eq("email", payload.email.toLowerCase())
+    .maybeSingle();
+
+  const senderStatus = existingSender?.status === "verified" ? "verified" : "pending";
+
   const { data: sender, error: senderError } = await supabase
     .from("sender_identities")
     .upsert(
@@ -47,7 +80,7 @@ export async function POST(request: Request) {
         domain_id: domain.id,
         email: payload.email.toLowerCase(),
         display_name: payload.displayName ?? null,
-        status: "pending"
+        status: senderStatus
       },
       { onConflict: "organization_id,email" }
     )
@@ -62,6 +95,7 @@ export async function POST(request: Request) {
     ok: true,
     domain,
     sender,
+    providerSetup,
     nextStep: "Verify this domain in your email provider and DNS, then set domain and sender status to verified."
   });
 }
@@ -87,4 +121,3 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ senders: data ?? [] });
 }
-

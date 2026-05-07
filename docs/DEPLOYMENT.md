@@ -34,6 +34,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 RESEND_API_KEY=re_xxxxxxxxx
 DEFAULT_FROM_EMAIL=no-reply@your-verified-domain.com
 NEXT_PUBLIC_APP_URL=https://your-app-url.com
+NEXT_PUBLIC_DEFAULT_ORGANIZATION_ID=00000000-0000-0000-0000-000000000001
 EMAIL_PROVIDER=resend
 RESEND_API_KEY=re_xxxxxxxxx
 SMTP_HOST=smtp.example.com

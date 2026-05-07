@@ -46,3 +46,5 @@ services:
         sync: false
       - key: NEXT_PUBLIC_APP_URL
         sync: false
+      - key: NEXT_PUBLIC_DEFAULT_ORGANIZATION_ID
+        value: 00000000-0000-0000-0000-000000000001
