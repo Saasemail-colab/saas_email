@@ -11,7 +11,7 @@ export function GET() {
       configured:
         provider === "auto"
           ? available.length > 0
-          : isEmailProviderName(provider) && provider !== "auto" && available.includes(provider),
+          : isEmailProviderName(provider) && available.includes(provider),
       note:
         provider === "auto"
           ? "Auto essaie les providers configures dans l'ordre recommande."
