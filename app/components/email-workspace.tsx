@@ -69,7 +69,7 @@ export function EmailWorkspace({
   const [domains, setDomains] = useState(initialDomains);
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatus[]>([]);
   const [status, setStatus] = useState<{ tone: "info" | "success" | "error"; text: string } | null>(null);
-  const [loadingAction, setLoadingAction] = useState<"register" | "send" | "load" | "setup" | null>(null);
+  const [loadingAction, setLoadingAction] = useState<"register" | "send" | "load" | "setup" | "diagnostics" | null>(null);
   const [adminSession, setAdminSession] = useState<"checking" | "locked" | "unlocked">("checking");
   const [adminCode, setAdminCode] = useState("");
   const [adminError, setAdminError] = useState<string | null>(null);
@@ -274,6 +274,39 @@ export function EmailWorkspace({
     }
   }
 
+  async function runSupabaseDiagnostics() {
+    setLoadingAction("diagnostics");
+    setStatus({ tone: "info", text: "Diagnostic Supabase..." });
+
+    try {
+      const response = await fetch("/api/setup/diagnostics");
+      const data = await readJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Diagnostic Supabase impossible.");
+      }
+
+      const summary = (data.checks ?? [])
+        .map((check: { name: string; ok: boolean; message: string; detail?: string }) => {
+          const detail = check.detail ? ` (${check.detail})` : "";
+          return `${check.ok ? "OK" : "ERREUR"} ${check.name}: ${check.message}${detail}`;
+        })
+        .join(" | ");
+
+      setStatus({
+        tone: data.ok ? "success" : "error",
+        text: summary || "Diagnostic termine."
+      });
+    } catch (error) {
+      setStatus({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Erreur pendant le diagnostic Supabase."
+      });
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
   async function registerSender() {
     setLoadingAction("register");
     setStatus({ tone: "info", text: "Enregistrement de l'expediteur..." });
@@ -458,6 +491,9 @@ export function EmailWorkspace({
         <div className="adminToolbar">
           <button type="button" className="secondaryButton" onClick={setupSupabaseSchema} disabled={loadingAction !== null}>
             {loadingAction === "setup" ? "Installation..." : "Installer base Supabase"}
+          </button>
+          <button type="button" className="secondaryButton" onClick={runSupabaseDiagnostics} disabled={loadingAction !== null}>
+            {loadingAction === "diagnostics" ? "Diagnostic..." : "Diagnostiquer Supabase"}
           </button>
           <button type="button" className="gmailButton" onClick={connectGmail} disabled={loadingAction !== null}>
             Connecter Gmail
