@@ -38,11 +38,7 @@ const providers = [
   "gmail_oauth",
   "resend",
   "smtp",
-  "sendgrid",
-  "mailgun",
-  "postmark",
-  "brevo",
-  "mailersend"
+  "mailgun"
 ] as const;
 
 const defaultOrganizationId =
@@ -73,6 +69,9 @@ export function EmailWorkspace({
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatus[]>([]);
   const [status, setStatus] = useState<{ tone: "info" | "success" | "error"; text: string } | null>(null);
   const [loadingAction, setLoadingAction] = useState<"register" | "send" | "load" | null>(null);
+  const [adminSession, setAdminSession] = useState<"checking" | "locked" | "unlocked">("checking");
+  const [adminCode, setAdminCode] = useState("");
+  const [adminError, setAdminError] = useState<string | null>(null);
 
   const selectedSender = useMemo(
     () => senders.find((sender) => sender.email.toLowerCase() === from.toLowerCase()),
@@ -80,6 +79,18 @@ export function EmailWorkspace({
   );
 
   useEffect(() => {
+    async function checkAdminSession() {
+      try {
+        const response = await fetch("/api/admin/session");
+        const data = await readJsonResponse(response);
+        setAdminSession(data.authenticated ? "unlocked" : "locked");
+      } catch {
+        setAdminSession("locked");
+      }
+    }
+
+    checkAdminSession();
+
     const url = new URL(window.location.href);
     const connectedEmail = url.searchParams.get("email");
     const gmailError = url.searchParams.get("gmail_error");
@@ -95,6 +106,34 @@ export function EmailWorkspace({
       setStatus({ tone: "error", text: gmailError });
     }
   }, []);
+
+  async function loginAdmin() {
+    setAdminError(null);
+
+    try {
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: adminCode })
+      });
+      const data = await readJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Code admin invalide.");
+      }
+
+      setAdminSession("unlocked");
+      setAdminCode("");
+      detectProviders();
+    } catch (error) {
+      setAdminError(error instanceof Error ? error.message : "Impossible d'ouvrir l'espace admin.");
+    }
+  }
+
+  async function logoutAdmin() {
+    await fetch("/api/admin/logout", { method: "POST" });
+    setAdminSession("locked");
+  }
 
   async function loadSenders(nextOrganizationId = organizationId) {
     setLoadingAction("load");
@@ -337,6 +376,43 @@ export function EmailWorkspace({
     }
   }
 
+  if (adminSession !== "unlocked") {
+    return (
+      <section className="adminGate">
+        <div className="adminGateCard">
+          <div>
+            <p className="eyebrow">Acces admin</p>
+            <h2>{adminSession === "checking" ? "Verification..." : "Code requis"}</h2>
+            <p>
+              La console email est reservee a la personne qui possede le code admin.
+            </p>
+          </div>
+          {adminSession === "locked" ? (
+            <form
+              className="adminGateForm"
+              onSubmit={(event) => {
+                event.preventDefault();
+                loginAdmin();
+              }}
+            >
+              <label>
+                Code admin
+                <input
+                  type="password"
+                  value={adminCode}
+                  onChange={(event) => setAdminCode(event.target.value)}
+                  placeholder="Entrez le code"
+                />
+              </label>
+              <button type="submit">Entrer</button>
+              {adminError ? <div className="formStatus" data-tone="error">{adminError}</div> : null}
+            </form>
+          ) : null}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="contentGrid">
       <article id="send" className="panel wide">
@@ -346,6 +422,14 @@ export function EmailWorkspace({
             <h2>Envoi controle</h2>
           </div>
           <span className="statusPill">{selectedSender?.status ?? "non enregistre"}</span>
+        </div>
+        <div className="adminToolbar">
+          <button type="button" className="gmailButton" onClick={connectGmail} disabled={loadingAction !== null}>
+            Connecter Gmail
+          </button>
+          <button type="button" className="secondaryButton" onClick={logoutAdmin}>
+            Verrouiller
+          </button>
         </div>
 
         <form className="composeForm" onSubmit={(event) => event.preventDefault()}>
@@ -422,9 +506,6 @@ export function EmailWorkspace({
             </button>
             <button type="button" className="secondaryButton" onClick={markSenderVerified} disabled={loadingAction !== null}>
               Marquer verified
-            </button>
-            <button type="button" className="secondaryButton" onClick={connectGmail} disabled={loadingAction !== null}>
-              Connecter Gmail
             </button>
             <button type="button" onClick={sendMessage} disabled={loadingAction !== null}>
               {loadingAction === "send" ? "Envoi..." : "Envoyer"}

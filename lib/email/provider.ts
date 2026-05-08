@@ -3,14 +3,10 @@ import nodemailer from "nodemailer";
 
 export const EMAIL_PROVIDER_NAMES = [
   "auto",
+  "gmail_oauth",
   "resend",
   "smtp",
-  "sendgrid",
-  "mailgun",
-  "postmark",
-  "brevo",
-  "mailersend",
-  "gmail_oauth"
+  "mailgun"
 ] as const;
 
 export type EmailProviderName =
@@ -73,27 +69,15 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     return sendWithSmtp(input);
   }
 
-  if (config.name === "sendgrid") {
-    return sendWithSendGrid(input);
-  }
-
   if (config.name === "mailgun") {
     return sendWithMailgun(input);
-  }
-
-  if (config.name === "postmark") {
-    return sendWithPostmark(input);
-  }
-
-  if (config.name === "brevo") {
-    return sendWithBrevo(input);
   }
 
   if (config.name === "gmail_oauth") {
     return sendWithGmailOAuth(input);
   }
 
-  return sendWithMailerSend(input);
+  throw new Error(`Unsupported email provider: ${config.name}`);
 }
 
 export function getAvailableProviders(): ConcreteEmailProviderName[] {
@@ -107,28 +91,12 @@ export function getAvailableProviders(): ConcreteEmailProviderName[] {
     providers.push("mailgun");
   }
 
-  if (process.env.POSTMARK_SERVER_TOKEN) {
-    providers.push("postmark");
-  }
-
-  if (process.env.SENDGRID_API_KEY) {
-    providers.push("sendgrid");
-  }
-
-  if (process.env.BREVO_API_KEY) {
-    providers.push("brevo");
-  }
-
-  if (process.env.MAILERSEND_API_KEY) {
-    providers.push("mailersend");
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.CREDENTIAL_ENCRYPTION_KEY) {
+    providers.push("gmail_oauth");
   }
 
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     providers.push("smtp");
-  }
-
-  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.CREDENTIAL_ENCRYPTION_KEY) {
-    providers.push("gmail_oauth");
   }
 
   return providers;
@@ -221,47 +189,6 @@ async function sendWithSmtp(input: SendEmailInput): Promise<SendEmailResult> {
   };
 }
 
-async function sendWithSendGrid(input: SendEmailInput): Promise<SendEmailResult> {
-  const apiKey = process.env.SENDGRID_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("SENDGRID_API_KEY is missing.");
-  }
-
-  const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      personalizations: [
-        {
-          to: input.to.map((email) => ({ email }))
-        }
-      ],
-      from: { email: input.from },
-      reply_to: input.replyTo ? { email: input.replyTo } : undefined,
-      subject: input.subject,
-      content: [
-        input.text ? { type: "text/plain", value: input.text } : undefined,
-        { type: "text/html", value: input.html }
-      ].filter(Boolean),
-      headers: input.headers
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`SendGrid error ${response.status}: ${errorText}`);
-  }
-
-  return {
-    provider: "sendgrid",
-    providerMessageId: response.headers.get("x-message-id") ?? undefined
-  };
-}
-
 async function sendWithMailgun(input: SendEmailInput): Promise<SendEmailResult> {
   const apiKey = process.env.MAILGUN_API_KEY;
   const domain = process.env.MAILGUN_DOMAIN;
@@ -307,118 +234,6 @@ async function sendWithMailgun(input: SendEmailInput): Promise<SendEmailResult> 
   return {
     provider: "mailgun",
     providerMessageId: data.id
-  };
-}
-
-async function sendWithPostmark(input: SendEmailInput): Promise<SendEmailResult> {
-  const apiKey = process.env.POSTMARK_SERVER_TOKEN;
-
-  if (!apiKey) {
-    throw new Error("POSTMARK_SERVER_TOKEN is missing.");
-  }
-
-  const response = await fetch("https://api.postmarkapp.com/email", {
-    method: "POST",
-    headers: {
-      "X-Postmark-Server-Token": apiKey,
-      "Content-Type": "application/json",
-      Accept: "application/json"
-    },
-    body: JSON.stringify({
-      From: input.from,
-      To: input.to.join(","),
-      Subject: input.subject,
-      HtmlBody: input.html,
-      TextBody: input.text,
-      ReplyTo: input.replyTo,
-      Headers: Object.entries(input.headers ?? {}).map(([Name, Value]) => ({ Name, Value }))
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Postmark error ${response.status}: ${errorText}`);
-  }
-
-  const data = (await response.json()) as { MessageID?: string };
-
-  return {
-    provider: "postmark",
-    providerMessageId: data.MessageID
-  };
-}
-
-async function sendWithBrevo(input: SendEmailInput): Promise<SendEmailResult> {
-  const apiKey = process.env.BREVO_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("BREVO_API_KEY is missing.");
-  }
-
-  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      "api-key": apiKey,
-      "Content-Type": "application/json",
-      Accept: "application/json"
-    },
-    body: JSON.stringify({
-      sender: { email: input.from },
-      to: input.to.map((email) => ({ email })),
-      subject: input.subject,
-      htmlContent: input.html,
-      textContent: input.text,
-      replyTo: input.replyTo ? { email: input.replyTo } : undefined,
-      headers: input.headers
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Brevo error ${response.status}: ${errorText}`);
-  }
-
-  const data = (await response.json()) as { messageId?: string };
-
-  return {
-    provider: "brevo",
-    providerMessageId: data.messageId
-  };
-}
-
-async function sendWithMailerSend(input: SendEmailInput): Promise<SendEmailResult> {
-  const apiKey = process.env.MAILERSEND_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("MAILERSEND_API_KEY is missing.");
-  }
-
-  const response = await fetch("https://api.mailersend.com/v1/email", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      Accept: "application/json"
-    },
-    body: JSON.stringify({
-      from: { email: input.from },
-      to: input.to.map((email) => ({ email })),
-      subject: input.subject,
-      html: input.html,
-      text: input.text,
-      reply_to: input.replyTo ? { email: input.replyTo } : undefined,
-      headers: Object.entries(input.headers ?? {}).map(([name, value]) => ({ name, value }))
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`MailerSend error ${response.status}: ${errorText}`);
-  }
-
-  return {
-    provider: "mailersend",
-    providerMessageId: response.headers.get("x-message-id") ?? undefined
   };
 }
 

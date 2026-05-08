@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { EMAIL_PROVIDER_NAMES, sendEmail, type SendEmailResult } from "@/lib/email/provider";
+import { adminForbiddenResponse, isAdminRequest } from "@/lib/admin/access";
 import { decryptCredential } from "@/lib/security/credentials";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -23,6 +24,10 @@ type GmailProviderConfig = {
 
 export async function POST(request: Request) {
   try {
+    if (!isAdminRequest(request)) {
+      return adminForbiddenResponse();
+    }
+
     const parsed = sendEmailSchema.safeParse(await request.json());
 
     if (!parsed.success) {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { adminForbiddenResponse, isAdminRequest } from "@/lib/admin/access";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 const organizationSchema = z.object({
@@ -7,8 +8,12 @@ const organizationSchema = z.object({
   name: z.string().min(1).max(120)
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    if (!isAdminRequest(request)) {
+      return adminForbiddenResponse();
+    }
+
     const supabase = getServerSupabase();
     const { data, error } = await supabase
       .from("organizations")
@@ -30,6 +35,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (!isAdminRequest(request)) {
+      return adminForbiddenResponse();
+    }
+
     const parsed = organizationSchema.safeParse(await request.json());
 
     if (!parsed.success) {
@@ -66,4 +75,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

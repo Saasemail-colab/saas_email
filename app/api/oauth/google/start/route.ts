@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { adminForbiddenResponse, isAdminRequest } from "@/lib/admin/access";
 import { buildGoogleAuthUrl } from "@/lib/google/oauth";
 
 const startSchema = z.object({
@@ -9,6 +10,10 @@ const startSchema = z.object({
 
 export function GET(request: Request) {
   try {
+    if (!isAdminRequest(request)) {
+      return adminForbiddenResponse();
+    }
+
     const url = new URL(request.url);
     const parsed = startSchema.safeParse({
       organizationId: url.searchParams.get("organizationId"),

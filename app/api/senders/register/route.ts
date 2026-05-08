@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { EMAIL_PROVIDER_NAMES } from "@/lib/email/provider";
+import { adminForbiddenResponse, isAdminRequest } from "@/lib/admin/access";
 import { setupSenderDomain } from "@/lib/email/provider-setup";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -14,6 +15,10 @@ const registerSenderSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    if (!isAdminRequest(request)) {
+      return adminForbiddenResponse();
+    }
+
     const parsed = registerSenderSchema.safeParse(await request.json());
 
     if (!parsed.success) {
@@ -125,6 +130,10 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  if (!isAdminRequest(request)) {
+    return adminForbiddenResponse();
+  }
+
   const url = new URL(request.url);
   const organizationId = url.searchParams.get("organizationId");
 

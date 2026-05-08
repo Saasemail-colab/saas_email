@@ -16,6 +16,10 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: ADMIN_ACCESS_CODE
+        sync: false
+      - key: ADMIN_SESSION_SECRET
+        sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_PROVIDER
@@ -28,19 +32,11 @@ services:
         sync: false
       - key: SMTP_PASS
         sync: false
-      - key: SENDGRID_API_KEY
-        sync: false
       - key: MAILGUN_API_KEY
         sync: false
       - key: MAILGUN_DOMAIN
         sync: false
       - key: MAILGUN_BASE_URL
-        sync: false
-      - key: POSTMARK_SERVER_TOKEN
-        sync: false
-      - key: BREVO_API_KEY
-        sync: false
-      - key: MAILERSEND_API_KEY
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false

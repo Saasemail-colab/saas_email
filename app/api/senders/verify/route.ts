@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { adminForbiddenResponse, isAdminRequest } from "@/lib/admin/access";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 const verifySenderSchema = z.object({
@@ -9,6 +10,10 @@ const verifySenderSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    if (!isAdminRequest(request)) {
+      return adminForbiddenResponse();
+    }
+
     const parsed = verifySenderSchema.safeParse(await request.json());
 
     if (!parsed.success) {

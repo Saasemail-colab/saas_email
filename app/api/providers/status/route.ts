@@ -1,15 +1,23 @@
 import { NextResponse } from "next/server";
-import { EMAIL_PROVIDER_NAMES, getAvailableProviders, type ConcreteEmailProviderName } from "@/lib/email/provider";
+import { adminForbiddenResponse, isAdminRequest } from "@/lib/admin/access";
+import { getAvailableProviders, type ConcreteEmailProviderName } from "@/lib/email/provider";
 import { PROVIDER_CATALOG } from "@/lib/email/provider-catalog";
 
-export function GET() {
+export function GET(request: Request) {
+  if (!isAdminRequest(request)) {
+    return adminForbiddenResponse();
+  }
+
   const available = getAvailableProviders();
 
   return NextResponse.json({
     available,
-    providers: EMAIL_PROVIDER_NAMES.map((provider) => ({
+    providers: PROVIDER_CATALOG.map((entry) => {
+      const provider = entry.provider;
+
+      return {
       provider,
-      catalog: PROVIDER_CATALOG.find((entry) => entry.provider === provider),
+      catalog: entry,
       configured:
         provider === "auto"
           ? available.length > 0
@@ -17,8 +25,9 @@ export function GET() {
       note:
         provider === "auto"
           ? "Auto essaie les providers configures dans l'ordre recommande."
-          : providerNote(provider)
-    }))
+        : providerNote(provider)
+      };
+    })
   });
 }
 
@@ -31,24 +40,8 @@ function providerNote(provider: string) {
     return "Necessite SMTP_HOST, SMTP_USER et SMTP_PASS.";
   }
 
-  if (provider === "sendgrid") {
-    return "Necessite SENDGRID_API_KEY.";
-  }
-
   if (provider === "mailgun") {
     return "Necessite MAILGUN_API_KEY et MAILGUN_DOMAIN.";
-  }
-
-  if (provider === "postmark") {
-    return "Necessite POSTMARK_SERVER_TOKEN.";
-  }
-
-  if (provider === "brevo") {
-    return "Necessite BREVO_API_KEY.";
-  }
-
-  if (provider === "mailersend") {
-    return "Necessite MAILERSEND_API_KEY.";
   }
 
   if (provider === "gmail_oauth") {
