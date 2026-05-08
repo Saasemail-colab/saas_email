@@ -18,6 +18,10 @@ services:
         sync: false
       - key: SUPABASE_DB_URL
         sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
       - key: ADMIN_ACCESS_CODE
         sync: false
       - key: ADMIN_SESSION_SECRET

@@ -11,13 +11,13 @@ export async function POST(request: Request) {
     return adminForbiddenResponse();
   }
 
-  const databaseUrl = process.env.SUPABASE_DB_URL?.trim();
+  const databaseUrl = getDatabaseUrl();
 
   if (!databaseUrl) {
     return NextResponse.json(
       {
         error:
-          "SUPABASE_DB_URL is missing. Add the Supabase direct database connection string on Render, then redeploy."
+          "Database URL is missing. Add SUPABASE_DB_URL, DIRECT_URL, or DATABASE_URL on Render, then redeploy."
       },
       { status: 500 }
     );
@@ -41,7 +41,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      message: "Schema Supabase installe ou mis a jour."
+      message: "Schema Supabase installe ou mis a jour.",
+      source: getDatabaseUrlSource()
     });
   } catch (error) {
     return NextResponse.json(
@@ -53,4 +54,38 @@ export async function POST(request: Request) {
   } finally {
     await client.end().catch(() => undefined);
   }
+}
+
+function getDatabaseUrl() {
+  return normalizeDatabaseUrl(
+    process.env.SUPABASE_DB_URL ??
+      process.env.DIRECT_URL ??
+      process.env.DATABASE_URL
+  );
+}
+
+function getDatabaseUrlSource() {
+  if (process.env.SUPABASE_DB_URL?.trim()) {
+    return "SUPABASE_DB_URL";
+  }
+
+  if (process.env.DIRECT_URL?.trim()) {
+    return "DIRECT_URL";
+  }
+
+  if (process.env.DATABASE_URL?.trim()) {
+    return "DATABASE_URL";
+  }
+
+  return null;
+}
+
+function normalizeDatabaseUrl(value: string | undefined) {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  return trimmed.replace(/^DATABASE_URL=/, "").replace(/^DIRECT_URL=/, "").replace(/^SUPABASE_DB_URL=/, "").replace(/^"|"$/g, "");
 }
