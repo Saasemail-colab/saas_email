@@ -14,7 +14,14 @@ export const PROVIDER_CATALOG: ProviderCatalogEntry[] = [
     label: "Auto",
     envKeys: ["EMAIL_PROVIDER=auto"],
     senderSetup: "manual",
-    dnsNotes: ["Priorite Gmail connecte pour les comptes Gmail, puis Resend, SMTP ou Mailgun selon la configuration."]
+    dnsNotes: ["Priorite Gmail SMTP/OAuth pour les comptes Gmail, puis Resend, SMTP ou Mailgun selon la configuration."]
+  },
+  {
+    provider: "gmail_smtp",
+    label: "Gmail SMTP",
+    envKeys: ["GMAIL_SMTP_USER", "GMAIL_SMTP_PASS"],
+    senderSetup: "smtp",
+    dnsNotes: ["Alternative simple a OAuth: utilise un mot de passe d'application Google du compte Gmail expediteur."]
   },
   {
     provider: "gmail_oauth",

@@ -36,6 +36,10 @@ function providerNote(provider: string) {
     return "Necessite RESEND_API_KEY.";
   }
 
+  if (provider === "gmail_smtp") {
+    return "Necessite GMAIL_SMTP_USER et GMAIL_SMTP_PASS.";
+  }
+
   if (provider === "smtp") {
     return "Necessite SMTP_HOST, SMTP_USER et SMTP_PASS.";
   }

@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 
 export const EMAIL_PROVIDER_NAMES = [
   "auto",
+  "gmail_smtp",
   "gmail_oauth",
   "resend",
   "smtp",
@@ -65,6 +66,10 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     return sendWithResend(input);
   }
 
+  if (config.name === "gmail_smtp") {
+    return sendWithGmailSmtp(input);
+  }
+
   if (config.name === "smtp") {
     return sendWithSmtp(input);
   }
@@ -85,6 +90,10 @@ export function getAvailableProviders(): ConcreteEmailProviderName[] {
 
   if (process.env.RESEND_API_KEY) {
     providers.push("resend");
+  }
+
+  if (process.env.GMAIL_SMTP_USER && process.env.GMAIL_SMTP_PASS) {
+    providers.push("gmail_smtp");
   }
 
   if (process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
@@ -185,6 +194,44 @@ async function sendWithSmtp(input: SendEmailInput): Promise<SendEmailResult> {
 
   return {
     provider: "smtp",
+    providerMessageId: info.messageId
+  };
+}
+
+async function sendWithGmailSmtp(input: SendEmailInput): Promise<SendEmailResult> {
+  const user = process.env.GMAIL_SMTP_USER;
+  const pass = process.env.GMAIL_SMTP_PASS;
+
+  if (!user || !pass) {
+    throw new Error("GMAIL_SMTP_USER and GMAIL_SMTP_PASS are required for Gmail SMTP.");
+  }
+
+  if (input.from.toLowerCase() !== user.toLowerCase()) {
+    throw new Error("Gmail SMTP can only send from the configured GMAIL_SMTP_USER address.");
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user,
+      pass
+    }
+  });
+
+  const info = await transporter.sendMail({
+    from: input.from,
+    to: input.to,
+    subject: input.subject,
+    html: input.html,
+    text: input.text,
+    replyTo: input.replyTo,
+    headers: input.headers
+  });
+
+  return {
+    provider: "gmail_smtp",
     providerMessageId: info.messageId
   };
 }

@@ -35,6 +35,7 @@ type OrganizationRow = {
 
 const providers = [
   "auto",
+  "gmail_smtp",
   "gmail_oauth",
   "resend",
   "smtp",
