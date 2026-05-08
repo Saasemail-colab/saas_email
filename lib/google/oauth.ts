@@ -43,7 +43,10 @@ function getStateSecret() {
 }
 
 export function getGoogleRedirectUri(origin: string) {
-  return process.env.GOOGLE_REDIRECT_URI?.trim() ?? `${origin}/api/oauth/google/callback`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const baseUrl = appUrl && isHttpUrl(appUrl) ? appUrl : origin;
+
+  return process.env.GOOGLE_REDIRECT_URI?.trim() ?? `${baseUrl}/api/oauth/google/callback`;
 }
 
 export function createGoogleState(input: Omit<GoogleState, "createdAt">) {
@@ -159,4 +162,13 @@ export async function getGoogleUserInfo(accessToken: string): Promise<{
     email_verified: data.email_verified,
     name: data.name
   };
+}
+
+function isHttpUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
 }

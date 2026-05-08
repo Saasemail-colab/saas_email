@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const ADMIN_COOKIE_NAME = "emailops_admin";
 
 const PUBLIC_PATHS = [
+  "/confidentialite",
   "/admin-login",
   "/api/admin/access",
   "/api/admin/login",

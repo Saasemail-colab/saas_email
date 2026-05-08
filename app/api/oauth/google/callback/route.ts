@@ -5,6 +5,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
+  const appOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim() || requestUrl.origin;
   const error = requestUrl.searchParams.get("error");
   const code = requestUrl.searchParams.get("code");
   const stateValue = requestUrl.searchParams.get("state");
@@ -103,13 +104,13 @@ export async function GET(request: Request) {
       throw new Error(senderError.message);
     }
 
-    const redirectUrl = new URL(state.returnTo || "/#send", requestUrl.origin);
+    const redirectUrl = new URL(state.returnTo || "/#send", appOrigin);
     redirectUrl.searchParams.set("gmail", "connected");
     redirectUrl.searchParams.set("email", email);
 
     return NextResponse.redirect(redirectUrl);
   } catch (callbackError) {
-    const redirectUrl = new URL("/#send", requestUrl.origin);
+    const redirectUrl = new URL("/#send", appOrigin);
     redirectUrl.searchParams.set(
       "gmail_error",
       callbackError instanceof Error ? callbackError.message : "Google OAuth failed."
