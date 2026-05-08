@@ -64,6 +64,12 @@ export const PROVIDER_CATALOG: ProviderCatalogEntry[] = [
     envKeys: ["MAILERSEND_API_KEY"],
     senderSetup: "manual",
     dnsNotes: ["Verifier le domaine dans MailerSend avec SPF/DKIM/DMARC."]
+  },
+  {
+    provider: "gmail_oauth",
+    label: "Gmail OAuth",
+    envKeys: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI", "CREDENTIAL_ENCRYPTION_KEY"],
+    senderSetup: "api",
+    dnsNotes: ["Chaque compte Gmail est connecte par OAuth. Aucun mot de passe Gmail n'est stocke."]
   }
 ];
-

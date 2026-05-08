@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type DomainRow = {
   domain: string;
@@ -33,7 +33,17 @@ type OrganizationRow = {
   status: string;
 };
 
-const providers = ["auto", "resend", "smtp", "sendgrid", "mailgun", "postmark", "brevo", "mailersend"] as const;
+const providers = [
+  "auto",
+  "gmail_oauth",
+  "resend",
+  "smtp",
+  "sendgrid",
+  "mailgun",
+  "postmark",
+  "brevo",
+  "mailersend"
+] as const;
 
 const defaultOrganizationId =
   process.env.NEXT_PUBLIC_DEFAULT_ORGANIZATION_ID ?? "00000000-0000-0000-0000-000000000001";
@@ -68,6 +78,23 @@ export function EmailWorkspace({
     () => senders.find((sender) => sender.email.toLowerCase() === from.toLowerCase()),
     [from, senders]
   );
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const connectedEmail = url.searchParams.get("email");
+    const gmailError = url.searchParams.get("gmail_error");
+
+    if (url.searchParams.get("gmail") === "connected" && connectedEmail) {
+      setProvider("gmail_oauth");
+      setFrom(connectedEmail);
+      setStatus({ tone: "success", text: `Gmail connecte: ${connectedEmail}` });
+      return;
+    }
+
+    if (gmailError) {
+      setStatus({ tone: "error", text: gmailError });
+    }
+  }, []);
 
   async function loadSenders(nextOrganizationId = organizationId) {
     setLoadingAction("load");
@@ -263,6 +290,13 @@ export function EmailWorkspace({
     }
   }
 
+  function connectGmail() {
+    const url = new URL("/api/oauth/google/start", window.location.origin);
+    url.searchParams.set("organizationId", organizationId);
+    url.searchParams.set("returnTo", "/#send");
+    window.location.href = url.toString();
+  }
+
   async function sendMessage() {
     setLoadingAction("send");
     setStatus({ tone: "info", text: "Envoi du message..." });
@@ -388,6 +422,9 @@ export function EmailWorkspace({
             </button>
             <button type="button" className="secondaryButton" onClick={markSenderVerified} disabled={loadingAction !== null}>
               Marquer verified
+            </button>
+            <button type="button" className="secondaryButton" onClick={connectGmail} disabled={loadingAction !== null}>
+              Connecter Gmail
             </button>
             <button type="button" onClick={sendMessage} disabled={loadingAction !== null}>
               {loadingAction === "send" ? "Envoi..." : "Envoyer"}

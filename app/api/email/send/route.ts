@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { EMAIL_PROVIDER_NAMES, sendEmail, type SendEmailResult } from "@/lib/email/provider";
+import { decryptCredential } from "@/lib/security/credentials";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 const sendEmailSchema = z.object({
@@ -14,6 +15,11 @@ const sendEmailSchema = z.object({
   audience: z.enum(["transactional", "marketing"]).default("transactional"),
   replyTo: z.string().email().optional()
 });
+
+type GmailProviderConfig = {
+  encryptedRefreshToken?: string;
+  email?: string;
+};
 
 export async function POST(request: Request) {
   try {
@@ -33,7 +39,7 @@ export async function POST(request: Request) {
 
     const { data: sender, error: senderError } = await supabase
     .from("sender_identities")
-    .select("id,email,status,organization_id")
+    .select("id,email,status,organization_id,provider_account_id")
     .eq("organization_id", payload.organizationId)
     .eq("email", fromEmail)
     .eq("status", "verified")
@@ -58,6 +64,38 @@ export async function POST(request: Request) {
     if (!verifiedDomain) {
       return NextResponse.json(
         { error: "Sender domain is not verified for this organization." },
+        { status: 403 }
+      );
+    }
+
+    let gmailOAuth: { refreshToken: string; email: string } | undefined;
+
+    if (sender.provider_account_id) {
+      const { data: providerAccount } = await supabase
+        .from("email_provider_accounts")
+        .select("provider,status,config")
+        .eq("id", sender.provider_account_id)
+        .eq("organization_id", payload.organizationId)
+        .single();
+
+      if (providerAccount?.provider === "gmail_oauth" && providerAccount.status === "active") {
+        const config = providerAccount.config as GmailProviderConfig;
+
+        if (config.encryptedRefreshToken) {
+          gmailOAuth = {
+            refreshToken: decryptCredential(config.encryptedRefreshToken),
+            email: config.email ?? fromEmail
+          };
+        }
+      }
+    }
+
+    const providerForSend =
+      payload.provider === "auto" && gmailOAuth ? "gmail_oauth" : payload.provider;
+
+    if (providerForSend === "gmail_oauth" && !gmailOAuth) {
+      return NextResponse.json(
+        { error: "This sender is not connected with Gmail OAuth. Connect Gmail first." },
         { status: 403 }
       );
     }
@@ -117,13 +155,14 @@ export async function POST(request: Request) {
 
     try {
       result = await sendEmail({
-        provider: payload.provider,
+        provider: providerForSend,
         from: fromEmail,
         to: recipients,
         subject: payload.subject,
         html: payload.html,
         text: payload.text,
         replyTo: payload.replyTo,
+        gmailOAuth,
         headers: unsubscribeUrl
           ? {
               "List-Unsubscribe": `<${unsubscribeUrl}>`,

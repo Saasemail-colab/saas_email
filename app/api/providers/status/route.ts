@@ -51,5 +51,9 @@ function providerNote(provider: string) {
     return "Necessite MAILERSEND_API_KEY.";
   }
 
+  if (provider === "gmail_oauth") {
+    return "Necessite GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET et CREDENTIAL_ENCRYPTION_KEY. Les comptes Gmail se connectent ensuite par OAuth.";
+  }
+
   return "";
 }

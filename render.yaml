@@ -42,6 +42,16 @@ services:
         sync: false
       - key: MAILERSEND_API_KEY
         sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: GOOGLE_OAUTH_STATE_SECRET
+        sync: false
+      - key: CREDENTIAL_ENCRYPTION_KEY
+        sync: false
       - key: DEFAULT_FROM_EMAIL
         sync: false
       - key: NEXT_PUBLIC_APP_URL
