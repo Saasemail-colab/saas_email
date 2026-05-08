@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     }
 
     const payload = parsed.data;
+    const fromEmail = payload.from.toLowerCase();
     const recipients = Array.isArray(payload.to) ? payload.to : [payload.to];
     const supabase = getServerSupabase();
 
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
     .from("sender_identities")
     .select("id,email,status,organization_id")
     .eq("organization_id", payload.organizationId)
-    .eq("email", payload.from)
+    .eq("email", fromEmail)
     .eq("status", "verified")
     .single();
 
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const domain = payload.from.split("@")[1];
+    const domain = fromEmail.split("@")[1];
     const { data: verifiedDomain } = await supabase
     .from("domains")
     .select("id,status")
@@ -117,7 +118,7 @@ export async function POST(request: Request) {
     try {
       result = await sendEmail({
         provider: payload.provider,
-        from: payload.from,
+        from: fromEmail,
         to: recipients,
         subject: payload.subject,
         html: payload.html,
