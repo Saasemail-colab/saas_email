@@ -96,6 +96,13 @@ a {
   margin-bottom: 26px;
 }
 
+.topbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .eyebrow {
   color: var(--primary);
   font-size: 12px;
@@ -464,6 +471,21 @@ textarea {
   margin-bottom: 0;
 }
 
+.publicFooter {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 18px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.publicFooter a {
+  color: var(--primary);
+  font-weight: 700;
+}
+
 .adminGate {
   display: grid;
   min-height: 420px;
@@ -584,6 +606,11 @@ textarea {
 
   .topbar {
     display: grid;
+  }
+
+  .topbarActions,
+  .publicFooter {
+    justify-content: flex-start;
   }
 
   .nav,

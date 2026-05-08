@@ -78,6 +78,7 @@ export default async function HomePage() {
           <a href="#domains">Domaines</a>
           <a href="#inbox">Inbox</a>
           <a href="#api">API</a>
+          <a href="/confidentialite">Confidentialite</a>
         </nav>
       </aside>
 
@@ -87,10 +88,15 @@ export default async function HomePage() {
             <p className="eyebrow">Plateforme email multi-tenant</p>
             <h1>Envoyer, recevoir et piloter les emails depuis des expediteurs verifies.</h1>
           </div>
-          <a className="primaryButton" href="#send">
-            Nouveau message
-            <ArrowRight size={16} />
-          </a>
+          <div className="topbarActions">
+            <a className="secondaryButton" href="/confidentialite">
+              Confidentialite
+            </a>
+            <a className="primaryButton" href="/admin-login?next=/#send">
+              Acces admin
+              <ArrowRight size={16} />
+            </a>
+          </div>
         </header>
 
         <section id="dashboard" className="metricGrid" aria-label="Indicateurs">
@@ -142,6 +148,10 @@ export default async function HomePage() {
             );
           })}
         </section>
+        <footer className="publicFooter">
+          <span>EmailOps</span>
+          <a href="/confidentialite">Politique de confidentialite</a>
+        </footer>
       </section>
     </main>
   );

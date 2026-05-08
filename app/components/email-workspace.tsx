@@ -69,7 +69,7 @@ export function EmailWorkspace({
   const [domains, setDomains] = useState(initialDomains);
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatus[]>([]);
   const [status, setStatus] = useState<{ tone: "info" | "success" | "error"; text: string } | null>(null);
-  const [loadingAction, setLoadingAction] = useState<"register" | "send" | "load" | null>(null);
+  const [loadingAction, setLoadingAction] = useState<"register" | "send" | "load" | "setup" | null>(null);
   const [adminSession, setAdminSession] = useState<"checking" | "locked" | "unlocked">("checking");
   const [adminCode, setAdminCode] = useState("");
   const [adminError, setAdminError] = useState<string | null>(null);
@@ -237,6 +237,36 @@ export function EmailWorkspace({
       setStatus({
         tone: "error",
         text: error instanceof Error ? error.message : "Erreur pendant la detection."
+      });
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
+  async function setupSupabaseSchema() {
+    setLoadingAction("setup");
+    setStatus({ tone: "info", text: "Installation des tables Supabase..." });
+
+    try {
+      const response = await fetch("/api/setup/supabase", {
+        method: "POST"
+      });
+      const data = await readJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Impossible d'installer les tables Supabase.");
+      }
+
+      setStatus({
+        tone: "success",
+        text: data.message ?? "Base Supabase installee."
+      });
+      loadOrganizations();
+      loadSenders();
+    } catch (error) {
+      setStatus({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Erreur pendant l'installation Supabase."
       });
     } finally {
       setLoadingAction(null);
@@ -425,6 +455,9 @@ export function EmailWorkspace({
           <span className="statusPill">{selectedSender?.status ?? "non enregistre"}</span>
         </div>
         <div className="adminToolbar">
+          <button type="button" className="secondaryButton" onClick={setupSupabaseSchema} disabled={loadingAction !== null}>
+            {loadingAction === "setup" ? "Installation..." : "Installer base Supabase"}
+          </button>
           <button type="button" className="gmailButton" onClick={connectGmail} disabled={loadingAction !== null}>
             Connecter Gmail
           </button>
