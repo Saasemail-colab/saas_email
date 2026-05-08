@@ -38,28 +38,34 @@ export default async function HomePage() {
   let organizations: Array<{ id: string; name: string; plan: string; status: string }> | null = null;
 
   if (hasSupabaseServerEnv()) {
-    const supabase = getServerSupabase();
-    const [domainResponse, senderResponse, organizationResponse] = await Promise.all([
-      supabase
-        .from("domains")
-        .select("domain,status")
-        .order("created_at", { ascending: false })
-        .limit(6),
-      supabase
-        .from("sender_identities")
-        .select("id,email,display_name,status")
-        .order("created_at", { ascending: false })
-        .limit(8),
-      supabase
-        .from("organizations")
-        .select("id,name,plan,status")
-        .order("created_at", { ascending: false })
-        .limit(10)
-    ]);
+    try {
+      const supabase = getServerSupabase();
+      const [domainResponse, senderResponse, organizationResponse] = await Promise.all([
+        supabase
+          .from("domains")
+          .select("domain,status")
+          .order("created_at", { ascending: false })
+          .limit(6),
+        supabase
+          .from("sender_identities")
+          .select("id,email,display_name,status")
+          .order("created_at", { ascending: false })
+          .limit(8),
+        supabase
+          .from("organizations")
+          .select("id,name,plan,status")
+          .order("created_at", { ascending: false })
+          .limit(10)
+      ]);
 
-    domains = domainResponse.data;
-    senders = senderResponse.data;
-    organizations = organizationResponse.data;
+      domains = domainResponse.data;
+      senders = senderResponse.data;
+      organizations = organizationResponse.data;
+    } catch {
+      domains = null;
+      senders = null;
+      organizations = null;
+    }
   }
 
   return (

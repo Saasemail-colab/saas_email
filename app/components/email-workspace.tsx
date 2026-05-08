@@ -254,7 +254,8 @@ export function EmailWorkspace({
       const data = await readJsonResponse(response);
 
       if (!response.ok) {
-        throw new Error(data.error ?? "Impossible d'installer les tables Supabase.");
+        const detail = data.detail ? ` Detail: ${data.detail}` : "";
+        throw new Error(`${data.error ?? "Impossible d'installer les tables Supabase."}${detail}`);
       }
 
       setStatus({

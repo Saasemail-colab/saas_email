@@ -37,6 +37,7 @@ export async function POST(request: Request) {
     const schemaSql = await readFile(schemaPath, "utf8");
 
     await client.connect();
+    await client.query("select 1");
     await client.query(schemaSql);
 
     return NextResponse.json({
@@ -45,15 +46,39 @@ export async function POST(request: Request) {
       source: getDatabaseUrlSource()
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to install Supabase schema.";
+
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Unable to install Supabase schema."
+        error: formatDatabaseError(message),
+        detail: message,
+        source: getDatabaseUrlSource()
       },
       { status: 500 }
     );
   } finally {
     await client.end().catch(() => undefined);
   }
+}
+
+function formatDatabaseError(message: string) {
+  if (message.includes("password authentication failed")) {
+    return "Connexion Supabase refusee: le mot de passe dans l'URL Postgres est incorrect.";
+  }
+
+  if (message.includes("ENOTFOUND") || message.includes("getaddrinfo")) {
+    return "Connexion Supabase impossible: l'hote Postgres dans l'URL est incorrect.";
+  }
+
+  if (message.includes("Tenant or user not found")) {
+    return "Connexion Supabase refusee: l'identifiant postgres du projet est incorrect.";
+  }
+
+  if (message.includes("SASL") || message.includes("SCRAM")) {
+    return "Connexion Supabase refusee: l'URL contient probablement un mot de passe mal encode. Remplace @ par %40.";
+  }
+
+  return message;
 }
 
 function getDatabaseUrl() {
@@ -87,5 +112,16 @@ function normalizeDatabaseUrl(value: string | undefined) {
     return undefined;
   }
 
-  return trimmed.replace(/^DATABASE_URL=/, "").replace(/^DIRECT_URL=/, "").replace(/^SUPABASE_DB_URL=/, "").replace(/^"|"$/g, "");
+  const cleaned = trimmed
+    .replace(/^DATABASE_URL=/, "")
+    .replace(/^DIRECT_URL=/, "")
+    .replace(/^SUPABASE_DB_URL=/, "")
+    .replace(/^['"]|['"]$/g, "")
+    .replace(/\s+/g, "");
+
+  try {
+    return new URL(cleaned).href;
+  } catch {
+    return cleaned;
+  }
 }

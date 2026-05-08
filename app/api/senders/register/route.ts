@@ -29,8 +29,13 @@ export async function POST(request: Request) {
     }
 
     const payload = parsed.data;
-    const domainName = payload.email.split("@")[1].toLowerCase();
+    const senderEmail = payload.email.toLowerCase();
+    const domainName = senderEmail.split("@")[1].toLowerCase();
     const supabase = getServerSupabase();
+    const gmailSmtpVerified =
+      payload.provider === "gmail_smtp" &&
+      process.env.GMAIL_SMTP_USER?.trim().toLowerCase() === senderEmail &&
+      Boolean(process.env.GMAIL_SMTP_PASS?.trim());
 
     const { error: organizationError } = await supabase
       .from("organizations")
@@ -67,7 +72,7 @@ export async function POST(request: Request) {
     .eq("domain", domainName)
     .maybeSingle();
 
-  const domainStatus = existingDomain?.status === "verified" ? "verified" : "pending";
+  const domainStatus = existingDomain?.status === "verified" || gmailSmtpVerified ? "verified" : "pending";
 
   const { data: domain, error: domainError } = await supabase
     .from("domains")
@@ -90,10 +95,10 @@ export async function POST(request: Request) {
     .from("sender_identities")
     .select("id,email,status")
     .eq("organization_id", payload.organizationId)
-    .eq("email", payload.email.toLowerCase())
+    .eq("email", senderEmail)
     .maybeSingle();
 
-  const senderStatus = existingSender?.status === "verified" ? "verified" : "pending";
+  const senderStatus = existingSender?.status === "verified" || gmailSmtpVerified ? "verified" : "pending";
 
   const { data: sender, error: senderError } = await supabase
     .from("sender_identities")
@@ -101,7 +106,7 @@ export async function POST(request: Request) {
       {
         organization_id: payload.organizationId,
         domain_id: domain.id,
-        email: payload.email.toLowerCase(),
+        email: senderEmail,
         display_name: payload.displayName ?? null,
         status: senderStatus
       },
@@ -118,8 +123,16 @@ export async function POST(request: Request) {
       ok: true,
       domain,
       sender,
-      providerSetup,
-      nextStep: "Verify this domain in your email provider and DNS, then set domain and sender status to verified."
+      providerSetup: gmailSmtpVerified
+        ? {
+            provider: "gmail_smtp",
+            status: "created",
+            message: "Gmail SMTP est configure. Expediteur marque verified automatiquement."
+          }
+        : providerSetup,
+      nextStep: gmailSmtpVerified
+        ? "Tu peux lancer un envoi test avec cet expediteur Gmail."
+        : "Verify this domain in your email provider and DNS, then set domain and sender status to verified."
     });
   } catch (error) {
     return NextResponse.json(
