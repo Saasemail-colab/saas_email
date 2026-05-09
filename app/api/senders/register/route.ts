@@ -45,13 +45,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unable to create organization." }, { status: 500 });
     }
 
-    const providerSetup = payload.configureProvider
-      ? await setupSenderDomain(payload.provider, domainName).catch((error) => ({
-          provider: payload.provider,
-          status: "manual" as const,
-          message: error instanceof Error ? error.message : "Provider setup failed."
-        }))
-      : { provider: payload.provider, status: "skipped" as const, message: "Provider setup skipped." };
+    const { data: gmailOAuthAccount } =
+      payload.provider === "gmail_oauth"
+        ? await supabase
+            .from("email_provider_accounts")
+            .select("id,config")
+            .eq("organization_id", payload.organizationId)
+            .eq("provider", "gmail_oauth")
+            .eq("status", "active")
+            .eq("name", `gmail:${senderEmail}`)
+            .maybeSingle()
+        : { data: null };
+
+    const gmailOAuthVerified = Boolean(gmailOAuthAccount?.id);
+
+    const providerSetup = gmailOAuthVerified
+      ? {
+          provider: "gmail_oauth" as const,
+          status: "created" as const,
+          message: "Compte Gmail OAuth deja autorise par Google. Expediteur marque verified automatiquement."
+        }
+      : payload.configureProvider
+        ? await setupSenderDomain(payload.provider, domainName).catch((error) => ({
+            provider: payload.provider,
+            status: "manual" as const,
+            message: error instanceof Error ? error.message : "Provider setup failed."
+          }))
+        : { provider: payload.provider, status: "skipped" as const, message: "Provider setup skipped." };
 
     const { data: existingDomain } = await supabase
       .from("domains")
@@ -60,7 +80,7 @@ export async function POST(request: Request) {
       .eq("domain", domainName)
       .maybeSingle();
 
-    const domainStatus = existingDomain?.status === "verified" || gmailSmtpVerified ? "verified" : "pending";
+    const domainStatus = existingDomain?.status === "verified" || gmailSmtpVerified || gmailOAuthVerified ? "verified" : "pending";
 
     const { data: domain, error: domainError } = await supabase
       .from("domains")
@@ -82,7 +102,7 @@ export async function POST(request: Request) {
       .eq("email", senderEmail)
       .maybeSingle();
 
-    const senderStatus = existingSender?.status === "verified" || gmailSmtpVerified ? "verified" : "pending";
+    const senderStatus = existingSender?.status === "verified" || gmailSmtpVerified || gmailOAuthVerified ? "verified" : "pending";
 
     const { data: sender, error: senderError } = await supabase
       .from("sender_identities")
@@ -92,7 +112,8 @@ export async function POST(request: Request) {
           domain_id: domain.id,
           email: senderEmail,
           display_name: payload.displayName ?? null,
-          status: senderStatus
+          status: senderStatus,
+          provider_account_id: gmailOAuthAccount?.id ?? null
         },
         { onConflict: "organization_id,email" }
       )
