@@ -1,4 +1,4 @@
-import { Activity, ArrowRight, Inbox, MailPlus, ShieldCheck } from "lucide-react";
+﻿import { Activity, ArrowRight, Inbox, MailPlus, ShieldCheck } from "lucide-react";
 import { EmailWorkspace } from "@/app/components/email-workspace";
 import { getServerSupabase, hasSupabaseServerEnv } from "@/lib/supabase/server";
 
@@ -57,6 +57,9 @@ export default async function HomePage() {
           <a href="#inbox">Inbox</a>
           <a href="#api">API</a>
           <a href="/confidentialite">Confidentialite</a>
+          <a href="/utilisation">Utilisation</a>
+          <a href="/conditions">Conditions</a>
+          <a href="/suppression-donnees">Suppression donnees</a>
         </nav>
       </aside>
 
@@ -68,6 +71,7 @@ export default async function HomePage() {
           </div>
           <div className="topbarActions">
             <a className="secondaryButton" href="/confidentialite">Confidentialite</a>
+            <a className="secondaryButton" href="/utilisation">Utilisation acceptable</a>
             <a className="primaryButton" href="/admin-login?next=/#send">
               Acces admin
               <ArrowRight size={16} />
@@ -113,6 +117,10 @@ export default async function HomePage() {
         <footer className="publicFooter">
           <span>EmailOps</span>
           <a href="/confidentialite">Politique de confidentialite</a>
+          <a href="/utilisation">Politique d&apos;utilisation</a>
+          <a href="/conditions">Conditions</a>
+          <a href="/suppression-donnees">Suppression des donnees</a>
+          <a href="/google-api-disclosure">Usage des donnees Google</a>
         </footer>
       </section>
     </main>

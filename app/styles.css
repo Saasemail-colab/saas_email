@@ -345,3 +345,18 @@ textarea {
     flex-direction: column;
   }
 }
+
+.legalPanel a {
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.legalPanel h2 {
+  margin-top: 24px;
+}
+
+.legalUpdated {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 28px;
+}
