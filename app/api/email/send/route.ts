@@ -171,3 +171,9 @@ function extractGmailOAuth(providerAccount: { provider?: string; status?: string
     email: config.email ?? fromEmail
   };
 }
+function formatZodError(details: z.inferFlattenedErrors<typeof sendEmailSchema>) {
+  const fieldErrors = Object.entries(details.fieldErrors)
+    .flatMap(([field, errors]) => (errors ?? []).map((error) => `${field}: ${error}`));
+
+  return fieldErrors.length ? `Payload invalide. ${fieldErrors.join(" | ")}` : "Payload invalide.";
+}
