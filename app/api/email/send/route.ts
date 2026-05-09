@@ -114,6 +114,8 @@ export async function POST(request: Request) {
       recipients.map((recipient) => ({ message_id: message.id, email: recipient, kind: "to", status: "queued" }))
     );
 
+    const replyToEmail = process.env.INBOUND_REPLY_TO_EMAIL?.trim() || payload.replyTo || fromEmail;
+
     let result: SendEmailResult;
 
     try {
@@ -124,7 +126,7 @@ export async function POST(request: Request) {
         subject: payload.subject,
         html: payload.html,
         text: payload.text,
-        replyTo: payload.replyTo,
+        replyTo: replyToEmail,
         gmailOAuth
       });
     } catch (error) {

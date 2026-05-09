@@ -647,3 +647,68 @@ button:hover,
     flex-direction: column;
   }
 }
+
+.inboxPanel {
+  grid-column: 2;
+}
+
+.inboxHint {
+  background: var(--brand-soft);
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  color: #1e3a8a;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 14px;
+  padding: 12px;
+}
+
+.inboxList {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.inboxItem,
+.emptyInbox {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.inboxItemHeader {
+  align-items: flex-start;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.inboxItemHeader strong {
+  font-size: 14px;
+}
+
+.inboxItemHeader span,
+.inboxAddresses,
+.emptyInbox {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.inboxAddresses {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.inboxItem p {
+  color: #344054;
+  line-height: 1.5;
+  margin: 10px 0 0;
+}
+
+@media (max-width: 900px) {
+  .inboxPanel {
+    grid-column: auto;
+  }
+}

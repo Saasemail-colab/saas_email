@@ -26,6 +26,15 @@ type ProviderStatus = {
   };
 };
 
+type InboundMessageRow = {
+  id: string;
+  from_email: string;
+  to_email: string;
+  subject: string | null;
+  html_body: string | null;
+  text_body: string | null;
+  received_at: string;
+};
 type OrganizationRow = {
   id: string;
   name: string;
@@ -67,8 +76,9 @@ export function EmailWorkspace({
   const [senders, setSenders] = useState(initialSenders);
   const [domains, setDomains] = useState(initialDomains);
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatus[]>([]);
+  const [inboundMessages, setInboundMessages] = useState<InboundMessageRow[]>([]);
   const [status, setStatus] = useState<{ tone: "info" | "success" | "error"; text: string } | null>(null);
-  const [loadingAction, setLoadingAction] = useState<"register" | "send" | "load" | "setup" | "diagnostics" | null>(null);
+  const [loadingAction, setLoadingAction] = useState<"register" | "send" | "load" | "setup" | "diagnostics" | "inbox" | null>(null);
   const [adminSession, setAdminSession] = useState<"checking" | "locked" | "unlocked">("checking");
   const [adminCode, setAdminCode] = useState("");
   const [adminError, setAdminError] = useState<string | null>(null);
@@ -268,6 +278,29 @@ export function EmailWorkspace({
     }
   }
 
+  async function loadInbox(nextOrganizationId = organizationId) {
+    setLoadingAction("inbox");
+    setStatus({ tone: "info", text: "Chargement de la boite de reception..." });
+
+    try {
+      const response = await fetch(`/api/inbound/messages?organizationId=${encodeURIComponent(nextOrganizationId)}`);
+      const data = await readJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Impossible de charger la boite de reception.");
+      }
+
+      setInboundMessages(data.messages ?? []);
+      setStatus({ tone: "success", text: "Boite de reception chargee." });
+    } catch (error) {
+      setStatus({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Erreur pendant le chargement de la boite de reception."
+      });
+    } finally {
+      setLoadingAction(null);
+    }
+  }
   async function setupSupabaseSchema() {
     setLoadingAction("setup");
     setStatus({ tone: "info", text: "Installation des tables Supabase..." });
@@ -667,6 +700,7 @@ export function EmailWorkspace({
                 setOrganizationId(organization.id);
                 setOrganizationName(organization.name);
                 loadSenders(organization.id);
+                loadInbox(organization.id);
               }}
             >
               <span>{organization.name}</span>
@@ -702,6 +736,41 @@ export function EmailWorkspace({
         ) : null}
       </article>
 
+      <article id="inbox" className="panel inboxPanel">
+        <div className="panelHeader">
+          <div>
+            <p className="eyebrow">Inbox SaaS</p>
+            <h2>Reponses recues</h2>
+          </div>
+          <button className="iconButton" type="button" onClick={() => loadInbox()} disabled={loadingAction !== null}>
+            {loadingAction === "inbox" ? "Chargement..." : "Recharger"}
+          </button>
+        </div>
+        <div className="inboxHint">
+          Les reponses arrivent ici quand <strong>INBOUND_REPLY_TO_EMAIL</strong> pointe vers une adresse entrante reliee au webhook.
+        </div>
+        <div className="inboxList">
+          {inboundMessages.length ? (
+            inboundMessages.map((message) => (
+              <article className="inboxItem" key={message.id}>
+                <div className="inboxItemHeader">
+                  <strong>{message.subject ?? "Sans sujet"}</strong>
+                  <span>{new Date(message.received_at).toLocaleString()}</span>
+                </div>
+                <div className="inboxAddresses">
+                  <span>De: {message.from_email}</span>
+                  <span>A: {message.to_email}</span>
+                </div>
+                <p>{message.text_body || stripHtml(message.html_body ?? "") || "Message sans contenu texte."}</p>
+              </article>
+            ))
+          ) : (
+            <div className="emptyInbox">
+              Aucune reponse pour cette organisation. Configure le webhook entrant puis clique sur Recharger.
+            </div>
+          )}
+        </div>
+      </article>
       <article id="api" className="panel">
         <div className="panelHeader">
           <div>
