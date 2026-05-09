@@ -74,15 +74,26 @@ export async function POST(request: Request) {
         .eq("organization_id", payload.organizationId)
         .single();
 
-      if (providerAccount?.provider === "gmail_oauth" && providerAccount.status === "active") {
-        const config = providerAccount.config as GmailProviderConfig;
+      gmailOAuth = extractGmailOAuth(providerAccount, fromEmail);
+    }
 
-        if (config.encryptedRefreshToken) {
-          gmailOAuth = {
-            refreshToken: decryptCredential(config.encryptedRefreshToken),
-            email: config.email ?? fromEmail
-          };
-        }
+    if (!gmailOAuth && domain === "gmail.com") {
+      const { data: providerAccount } = await supabase
+        .from("email_provider_accounts")
+        .select("id,provider,status,config")
+        .eq("organization_id", payload.organizationId)
+        .eq("provider", "gmail_oauth")
+        .eq("status", "active")
+        .eq("name", `gmail:${fromEmail}`)
+        .maybeSingle();
+
+      gmailOAuth = extractGmailOAuth(providerAccount, fromEmail);
+
+      if (gmailOAuth && providerAccount?.id && !sender.provider_account_id) {
+        await supabase
+          .from("sender_identities")
+          .update({ provider_account_id: providerAccount.id })
+          .eq("id", sender.id);
       }
     }
 
@@ -143,4 +154,20 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unexpected send error." }, { status: 500 });
   }
+}
+function extractGmailOAuth(providerAccount: { provider?: string; status?: string; config?: unknown } | null | undefined, fromEmail: string) {
+  if (providerAccount?.provider !== "gmail_oauth" || providerAccount.status !== "active") {
+    return undefined;
+  }
+
+  const config = providerAccount.config as GmailProviderConfig;
+
+  if (!config?.encryptedRefreshToken) {
+    return undefined;
+  }
+
+  return {
+    refreshToken: decryptCredential(config.encryptedRefreshToken),
+    email: config.email ?? fromEmail
+  };
 }
