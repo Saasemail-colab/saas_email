@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Politique de confidentialite | EmailOps",
@@ -42,6 +42,13 @@ export default function PrivacyPage() {
           personnelles.
         </p>
 
+
+        <h2>Google API Services et Limited Use</h2>
+        <p>
+          L&apos;utilisation et le transfert des informations recues depuis les API Google respectent la Google API Services
+          User Data Policy, y compris les exigences Limited Use. Les donnees Google sont utilisees uniquement pour fournir
+          ou ameliorer les fonctionnalites visibles de connexion Gmail et d&apos;envoi d&apos;emails.
+        </p>
         <h2>Partage avec les fournisseurs</h2>
         <p>
           Pour executer l&apos;envoi, certaines donnees peuvent etre transmises aux fournisseurs configures, principalement
@@ -67,7 +74,7 @@ export default function PrivacyPage() {
           de la plateforme.
         </p>
 
-        <p className="legalUpdated">Derniere mise a jour : 8 mai 2026</p>
+        <p className="legalUpdated">Derniere mise a jour : 9 mai 2026</p>
       </section>
     </main>
   );
