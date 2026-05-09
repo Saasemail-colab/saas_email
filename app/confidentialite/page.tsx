@@ -44,9 +44,8 @@ export default function PrivacyPage() {
 
         <h2>Partage avec les fournisseurs</h2>
         <p>
-          Pour executer l&apos;envoi, certaines donnees peuvent etre transmises aux fournisseurs configures, par exemple
-          Gmail, Resend, SMTP ou Mailgun. Ces fournisseurs traitent les messages selon leurs propres conditions et
-          politiques.
+          Pour executer l&apos;envoi, certaines donnees peuvent etre transmises aux fournisseurs configures, principalement
+          Gmail et Resend. Ces fournisseurs traitent les messages selon leurs propres conditions et politiques.
         </p>
 
         <h2>Securite</h2>

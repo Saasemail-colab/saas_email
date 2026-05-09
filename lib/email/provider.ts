@@ -5,9 +5,7 @@ export const EMAIL_PROVIDER_NAMES = [
   "auto",
   "gmail_smtp",
   "gmail_oauth",
-  "resend",
-  "smtp",
-  "mailgun"
+  "resend"
 ] as const;
 
 export type EmailProviderName =
@@ -70,14 +68,6 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     return sendWithGmailSmtp(input);
   }
 
-  if (config.name === "smtp") {
-    return sendWithSmtp(input);
-  }
-
-  if (config.name === "mailgun") {
-    return sendWithMailgun(input);
-  }
-
   if (config.name === "gmail_oauth") {
     return sendWithGmailOAuth(input);
   }
@@ -96,16 +86,8 @@ export function getAvailableProviders(): ConcreteEmailProviderName[] {
     providers.push("gmail_smtp");
   }
 
-  if (process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
-    providers.push("mailgun");
-  }
-
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.CREDENTIAL_ENCRYPTION_KEY) {
     providers.push("gmail_oauth");
-  }
-
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-    providers.push("smtp");
   }
 
   return providers;
@@ -162,42 +144,6 @@ async function sendWithResend(input: SendEmailInput): Promise<SendEmailResult> {
   };
 }
 
-async function sendWithSmtp(input: SendEmailInput): Promise<SendEmailResult> {
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT ?? "587");
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  if (!host || !user || !pass) {
-    throw new Error("SMTP_HOST, SMTP_USER and SMTP_PASS are required for SMTP provider.");
-  }
-
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: {
-      user,
-      pass
-    }
-  });
-
-  const info = await transporter.sendMail({
-    from: input.from,
-    to: input.to,
-    subject: input.subject,
-    html: input.html,
-    text: input.text,
-    replyTo: input.replyTo,
-    headers: input.headers
-  });
-
-  return {
-    provider: "smtp",
-    providerMessageId: info.messageId
-  };
-}
-
 async function sendWithGmailSmtp(input: SendEmailInput): Promise<SendEmailResult> {
   const user = process.env.GMAIL_SMTP_USER;
   const pass = process.env.GMAIL_SMTP_PASS;
@@ -233,54 +179,6 @@ async function sendWithGmailSmtp(input: SendEmailInput): Promise<SendEmailResult
   return {
     provider: "gmail_smtp",
     providerMessageId: info.messageId
-  };
-}
-
-async function sendWithMailgun(input: SendEmailInput): Promise<SendEmailResult> {
-  const apiKey = process.env.MAILGUN_API_KEY;
-  const domain = process.env.MAILGUN_DOMAIN;
-  const baseUrl = process.env.MAILGUN_BASE_URL ?? "https://api.mailgun.net";
-
-  if (!apiKey || !domain) {
-    throw new Error("MAILGUN_API_KEY and MAILGUN_DOMAIN are required for Mailgun provider.");
-  }
-
-  const formData = new FormData();
-  formData.set("from", input.from);
-  input.to.forEach((recipient) => formData.append("to", recipient));
-  formData.set("subject", input.subject);
-  formData.set("html", input.html);
-
-  if (input.text) {
-    formData.set("text", input.text);
-  }
-
-  if (input.replyTo) {
-    formData.set("h:Reply-To", input.replyTo);
-  }
-
-  for (const [key, value] of Object.entries(input.headers ?? {})) {
-    formData.set(`h:${key}`, value);
-  }
-
-  const response = await fetch(`${baseUrl}/v3/${domain}/messages`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${Buffer.from(`api:${apiKey}`).toString("base64")}`
-    },
-    body: formData
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Mailgun error ${response.status}: ${errorText}`);
-  }
-
-  const data = (await response.json()) as { id?: string };
-
-  return {
-    provider: "mailgun",
-    providerMessageId: data.id
   };
 }
 

@@ -37,9 +37,7 @@ const providers = [
   "auto",
   "gmail_smtp",
   "gmail_oauth",
-  "resend",
-  "smtp",
-  "mailgun"
+  "resend"
 ] as const;
 
 const defaultOrganizationId =

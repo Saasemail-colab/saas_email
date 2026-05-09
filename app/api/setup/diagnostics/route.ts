@@ -39,6 +39,29 @@ export async function GET(request: Request) {
     message: databaseUrl ? `Variable presente via ${getDatabaseUrlSource()}.` : "SUPABASE_DB_URL, DIRECT_URL ou DATABASE_URL manquante."
   });
 
+  if (databaseUrl) {
+    try {
+      const parsedDatabaseUrl = new URL(databaseUrl);
+      const usesSupabasePooler = parsedDatabaseUrl.hostname.includes("pooler.supabase.com");
+      const hasPoolerUser = parsedDatabaseUrl.username.startsWith("postgres.");
+
+      checks.push({
+        name: "Database URL format",
+        ok: !usesSupabasePooler || hasPoolerUser,
+        message:
+          usesSupabasePooler && !hasPoolerUser
+            ? "Le pooler Supabase attend un utilisateur au format postgres.PROJECT_REF, pas seulement postgres."
+            : "Format utilisateur Postgres coherent."
+      });
+    } catch {
+      checks.push({
+        name: "Database URL format",
+        ok: false,
+        message: "SUPABASE_DB_URL n'est pas une URL Postgres valide."
+      });
+    }
+  }
+
   if (hasSupabaseServerEnv()) {
     try {
       const supabase = getServerSupabase();

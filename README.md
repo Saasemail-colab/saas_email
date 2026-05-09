@@ -27,6 +27,7 @@ On ne doit pas permettre l'envoi depuis une adresse non controlee par l'utilisat
 
 ## Documents de depart
 
+- [Installation de zero](INSTALLATION_ZERO.md)
 - [Specification produit](docs/PRODUCT_SPEC.md)
 - [Architecture technique](docs/ARCHITECTURE.md)
 - [Securite et conformite](docs/SECURITY_COMPLIANCE.md)
@@ -39,7 +40,7 @@ On ne doit pas permettre l'envoi depuis une adresse non controlee par l'utilisat
 
 - App: Next.js + TypeScript
 - Base de donnees: Supabase PostgreSQL
-- Envoi email MVP: Resend
+- Envoi email MVP: Resend, Gmail SMTP, Gmail OAuth
 - Deploiement: Railway ou Render
 
 ## Lancer en local
@@ -50,7 +51,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Avant d'utiliser l'API d'envoi, configurer Supabase, executer la migration `supabase/migrations/0001_initial_schema.sql`, puis ajouter un expediteur verifie.
+Avant d'utiliser l'API d'envoi, configurer Supabase, lancer le diagnostic admin, installer la base Supabase, puis ajouter un expediteur verifie.
 
 ## MVP recommande
 

@@ -14,7 +14,7 @@ export const PROVIDER_CATALOG: ProviderCatalogEntry[] = [
     label: "Auto",
     envKeys: ["EMAIL_PROVIDER=auto"],
     senderSetup: "manual",
-    dnsNotes: ["Priorite Gmail SMTP/OAuth pour les comptes Gmail, puis Resend, SMTP ou Mailgun selon la configuration."]
+    dnsNotes: ["Priorite Gmail OAuth/SMTP pour les comptes Gmail, puis Resend pour les domaines verifies."]
   },
   {
     provider: "gmail_smtp",
@@ -36,19 +36,5 @@ export const PROVIDER_CATALOG: ProviderCatalogEntry[] = [
     envKeys: ["RESEND_API_KEY"],
     senderSetup: "api",
     dnsNotes: ["SPF/DKIM/DMARC fournis par Resend apres creation du domaine."]
-  },
-  {
-    provider: "smtp",
-    label: "SMTP generique",
-    envKeys: ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS"],
-    senderSetup: "smtp",
-    dnsNotes: ["Connecte les boites pro qui donnent des identifiants SMTP: Workspace, Zoho, OVH, SES, Microsoft 365."]
-  },
-  {
-    provider: "mailgun",
-    label: "Mailgun",
-    envKeys: ["MAILGUN_API_KEY", "MAILGUN_DOMAIN", "MAILGUN_BASE_URL"],
-    senderSetup: "api",
-    dnsNotes: ["Utile pour domaines verifies, webhooks, routage entrant et volume technique."]
   }
 ];

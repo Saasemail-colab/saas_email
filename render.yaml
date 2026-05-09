@@ -34,20 +34,6 @@ services:
         sync: false
       - key: GMAIL_SMTP_PASS
         sync: false
-      - key: SMTP_HOST
-        sync: false
-      - key: SMTP_PORT
-        sync: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
-        sync: false
-      - key: MAILGUN_API_KEY
-        sync: false
-      - key: MAILGUN_DOMAIN
-        sync: false
-      - key: MAILGUN_BASE_URL
-        sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET

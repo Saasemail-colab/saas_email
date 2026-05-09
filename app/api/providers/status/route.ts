@@ -40,14 +40,6 @@ function providerNote(provider: string) {
     return "Necessite GMAIL_SMTP_USER et GMAIL_SMTP_PASS.";
   }
 
-  if (provider === "smtp") {
-    return "Necessite SMTP_HOST, SMTP_USER et SMTP_PASS.";
-  }
-
-  if (provider === "mailgun") {
-    return "Necessite MAILGUN_API_KEY et MAILGUN_DOMAIN.";
-  }
-
   if (provider === "gmail_oauth") {
     return "Necessite GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET et CREDENTIAL_ENCRYPTION_KEY. Les comptes Gmail se connectent ensuite par OAuth.";
   }

@@ -45,7 +45,7 @@ export function normalizeDatabaseUrl(value: string | undefined) {
 
 export function formatDatabaseError(message: string) {
   if (message.includes("password authentication failed")) {
-    return "Connexion Supabase refusee: le mot de passe dans l'URL Postgres est incorrect.";
+    return "Connexion Supabase refusee: le mot de passe ou l'utilisateur dans SUPABASE_DB_URL est incorrect. Avec le pooler, utilise postgres.PROJECT_REF et le database password Supabase.";
   }
 
   if (message.includes("ENOTFOUND") || message.includes("getaddrinfo")) {

@@ -12,7 +12,7 @@ Composants recommandes:
 - Base de donnees: tenants, domaines, messages, contacts, events.
 - Stockage objet: pieces jointes, bodies bruts, exports.
 - Cache/queue: Redis, BullMQ, Sidekiq ou equivalent.
-- Providers email: Amazon SES, SendGrid, Mailgun, Postmark, Resend, SMTP.
+- Providers email MVP: Resend, Gmail SMTP, Gmail OAuth.
 
 ## Flux d'envoi
 
@@ -47,20 +47,18 @@ Methodes minimales:
 - `parseWebhook(payload, signature)`
 - `getSuppressionList()`
 
-Providers possibles:
+Providers gardes dans le MVP:
 
-- Amazon SES: robuste, scalable, bon pour transactionnel.
-- Mailgun: bon pour inbound parsing et routing.
-- SendGrid: courant pour campagnes et API.
-- Postmark: excellent pour transactionnel.
-- Resend: simple pour developpeurs.
-- SMTP generique: utile mais moins riche pour tracking.
+- Resend: domaines verifies par DNS.
+- Gmail SMTP: un compte Gmail configure avec mot de passe d'application.
+- Gmail OAuth: plusieurs comptes Gmail connectes par OAuth.
 
 Implementation MVP:
 
 - `EMAIL_PROVIDER=resend` pour Resend;
-- `EMAIL_PROVIDER=smtp` pour SMTP generique;
-- `EMAIL_PROVIDER=sendgrid` pour SendGrid API.
+- `EMAIL_PROVIDER=gmail_smtp` pour Gmail avec mot de passe d'application;
+- `EMAIL_PROVIDER=gmail_oauth` pour Gmail connecte par OAuth;
+- `EMAIL_PROVIDER=auto` pour utiliser le premier provider configure compatible.
 
 ## Stack recommandee
 

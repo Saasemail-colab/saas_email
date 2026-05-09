@@ -10,7 +10,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "validate:env": "node scripts/validate-env.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.44.4",

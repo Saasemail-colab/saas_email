@@ -22,10 +22,6 @@ export async function setupSenderDomain(provider: EmailProviderName, domain: str
     return setupResendDomain(domain);
   }
 
-  if (provider === "mailgun") {
-    return setupMailgunDomain(domain);
-  }
-
   if (provider === "auto") {
     return setupAutoDomain(domain);
   }
@@ -43,7 +39,7 @@ async function setupAutoDomain(domain: string): Promise<ProviderSetupResult> {
   const results: ProviderSetupResult[] = [];
 
   for (const provider of providers) {
-    if (provider === "resend" || provider === "mailgun") {
+    if (provider === "resend") {
       results.push(await setupSenderDomain(provider, domain));
     }
   }
@@ -53,7 +49,7 @@ async function setupAutoDomain(domain: string): Promise<ProviderSetupResult> {
       provider: "auto",
       status: "manual",
       message:
-        "Aucun provider configurable automatiquement n'a de cle API. Ajoute RESEND_API_KEY ou MAILGUN_API_KEY, ou configure le domaine manuellement."
+        "Aucun provider de domaine configurable automatiquement n'a de cle API. Ajoute RESEND_API_KEY ou connecte Gmail."
     };
   }
 
@@ -98,46 +94,6 @@ async function setupResendDomain(domain: string): Promise<ProviderSetupResult> {
       response.status === 409
         ? "Le domaine existe deja chez Resend. Verifie ses DNS dans le dashboard Resend."
         : "Domaine cree chez Resend. Copie les DNS fournis par Resend puis verifie le domaine.",
-    raw: data
-  };
-}
-
-async function setupMailgunDomain(domain: string): Promise<ProviderSetupResult> {
-  const apiKey = process.env.MAILGUN_API_KEY;
-  const baseUrl = process.env.MAILGUN_BASE_URL ?? "https://api.mailgun.net";
-
-  if (!apiKey) {
-    return {
-      provider: "mailgun",
-      status: "skipped",
-      message: "MAILGUN_API_KEY manquant. Ajoute la cle sur Render puis relance l'ajout."
-    };
-  }
-
-  const formData = new FormData();
-  formData.set("name", domain);
-
-  const response = await fetch(`${baseUrl}/v4/domains`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${Buffer.from(`api:${apiKey}`).toString("base64")}`
-    },
-    body: formData
-  });
-
-  const data = await safeJson(response);
-
-  if (!response.ok && response.status !== 409) {
-    throw new Error(`Mailgun domain setup failed ${response.status}: ${JSON.stringify(data)}`);
-  }
-
-  return {
-    provider: "mailgun",
-    status: response.status === 409 ? "manual" : "created",
-    message:
-      response.status === 409
-        ? "Le domaine existe deja chez Mailgun. Verifie ses DNS dans le dashboard Mailgun."
-        : "Domaine cree chez Mailgun. Copie les DNS fournis par Mailgun puis verifie le domaine.",
     raw: data
   };
 }
