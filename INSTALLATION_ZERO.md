@@ -1,4 +1,4 @@
-# Installation de zero: EmailOps avec Supabase, Resend et Gmail
+﻿# Installation de zero: EmailOps avec Supabase, Resend et Gmail
 
 Ce fichier reprend le deploiement proprement en tenant compte des erreurs rencontrees: variables Supabase manquantes, URL Postgres invalide, tables absentes, Gmail non verifie, et exigences Google OAuth.
 
@@ -145,3 +145,35 @@ Le script affiche uniquement les statuts, pas les secrets.
 7. Ajouter l'expediteur dans l'interface.
 8. Envoyer un test.
 9. Configurer Google OAuth seulement apres que le domaine et la page confidentialite sont publics.
+## 9. Boite de reception SaaS pour les reponses
+
+Les reponses ne peuvent pas revenir dans le SaaS si le destinataire repond directement a une adresse Gmail classique. Pour les centraliser dans EmailOps, configure une adresse entrante dediee, par exemple:
+
+```env
+INBOUND_REPLY_TO_EMAIL=replies@ton-domaine.com
+INBOUND_WEBHOOK_SECRET=une-cle-secrete-webhook
+```
+
+Le SaaS mettra cette adresse dans le header `Reply-To`. Quand le destinataire clique sur Repondre, sa reponse part vers cette adresse entrante.
+
+Configure ensuite ton fournisseur entrant pour appeler ce webhook:
+
+```txt
+POST https://ton-app.onrender.com/api/inbound/webhook
+Header: x-inbound-secret: une-cle-secrete-webhook
+```
+
+Payload JSON accepte:
+
+```json
+{
+  "organizationId": "00000000-0000-0000-0000-000000000001",
+  "from": "client@example.com",
+  "to": "replies@ton-domaine.com",
+  "subject": "Re: Bonjour",
+  "text": "Message de reponse",
+  "html": "<p>Message de reponse</p>"
+}
+```
+
+Apres reception, les messages sont visibles dans le panneau `Inbox SaaS` de l'espace admin.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type DomainRow = {
   domain: string;
@@ -26,6 +26,15 @@ type ProviderStatus = {
   };
 };
 
+type InboundMessageRow = {
+  id: string;
+  from_email: string;
+  to_email: string;
+  subject: string | null;
+  html_body: string | null;
+  text_body: string | null;
+  received_at: string;
+};
 type OrganizationRow = {
   id: string;
   name: string;
@@ -62,12 +71,14 @@ export function EmailWorkspace({
   const [subject, setSubject] = useState("Bienvenue sur notre plateforme");
   const [html, setHtml] = useState("<p>Bonjour, votre compte est pret.</p>");
   const [text, setText] = useState("Bonjour, votre compte est pret.");
+  const editorRef = useRef<HTMLDivElement | null>(null);
   const [audience, setAudience] = useState<"transactional" | "marketing">("transactional");
   const [senders, setSenders] = useState(initialSenders);
   const [domains, setDomains] = useState(initialDomains);
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatus[]>([]);
+  const [inboundMessages, setInboundMessages] = useState<InboundMessageRow[]>([]);
   const [status, setStatus] = useState<{ tone: "info" | "success" | "error"; text: string } | null>(null);
-  const [loadingAction, setLoadingAction] = useState<"register" | "send" | "load" | "setup" | "diagnostics" | null>(null);
+  const [loadingAction, setLoadingAction] = useState<"register" | "send" | "load" | "setup" | "diagnostics" | "inbox" | null>(null);
   const [adminSession, setAdminSession] = useState<"checking" | "locked" | "unlocked">("checking");
   const [adminCode, setAdminCode] = useState("");
   const [adminError, setAdminError] = useState<string | null>(null);
@@ -106,6 +117,32 @@ export function EmailWorkspace({
     }
   }, []);
 
+  function syncEditorContent() {
+    const content = editorRef.current?.innerHTML ?? "";
+    const plainText = editorRef.current?.innerText ?? "";
+    setHtml(content.trim() ? content : "<p></p>");
+    setText(plainText.trim());
+  }
+
+  function runEditorCommand(command: string, value?: string) {
+    editorRef.current?.focus();
+    document.execCommand(command, false, value);
+    syncEditorContent();
+  }
+
+  function insertTemplate(kind: "welcome" | "followup" | "simple") {
+    const templates = {
+      welcome: "<p>Bonjour,</p><p>Votre compte est pret. Vous pouvez maintenant utiliser la plateforme.</p><p>Cordialement,<br>Equipe support</p>",
+      followup: "<p>Bonjour,</p><p>Nous revenons vers vous concernant votre demande.</p><p>Merci pour votre confiance.</p>",
+      simple: "<p>Bonjour,</p><p>Votre message ici.</p><p>Cordialement,</p>"
+    };
+    const nextHtml = templates[kind];
+    setHtml(nextHtml);
+    setText(stripHtml(nextHtml));
+    if (editorRef.current) {
+      editorRef.current.innerHTML = nextHtml;
+    }
+  }
   async function loginAdmin() {
     setAdminError(null);
 
@@ -241,6 +278,29 @@ export function EmailWorkspace({
     }
   }
 
+  async function loadInbox(nextOrganizationId = organizationId) {
+    setLoadingAction("inbox");
+    setStatus({ tone: "info", text: "Chargement de la boite de reception..." });
+
+    try {
+      const response = await fetch(`/api/inbound/messages?organizationId=${encodeURIComponent(nextOrganizationId)}`);
+      const data = await readJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Impossible de charger la boite de reception.");
+      }
+
+      setInboundMessages(data.messages ?? []);
+      setStatus({ tone: "success", text: "Boite de reception chargee." });
+    } catch (error) {
+      setStatus({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Erreur pendant le chargement de la boite de reception."
+      });
+    } finally {
+      setLoadingAction(null);
+    }
+  }
   async function setupSupabaseSchema() {
     setLoadingAction("setup");
     setStatus({ tone: "info", text: "Installation des tables Supabase..." });
@@ -557,14 +617,45 @@ export function EmailWorkspace({
             Sujet
             <input value={subject} onChange={(event) => setSubject(event.target.value)} />
           </label>
-          <label className="full">
-            HTML
-            <textarea value={html} onChange={(event) => setHtml(event.target.value)} rows={5} />
-          </label>
-          <label className="full">
-            Texte simple
-            <textarea value={text} onChange={(event) => setText(event.target.value)} rows={3} />
-          </label>
+          <div className="editorShell full">
+            <div className="editorTopline">
+              <div>
+                <span className="fieldLabel">Message</span>
+                <strong>Editeur visuel</strong>
+              </div>
+              <div className="templateGroup" aria-label="Modeles rapides">
+                <button type="button" className="chipButton" onClick={() => insertTemplate("welcome")}>Bienvenue</button>
+                <button type="button" className="chipButton" onClick={() => insertTemplate("followup")}>Relance</button>
+                <button type="button" className="chipButton" onClick={() => insertTemplate("simple")}>Simple</button>
+              </div>
+            </div>
+            <div className="editorToolbar" aria-label="Outils de mise en forme">
+              <button type="button" className="toolButton" title="Gras" onClick={() => runEditorCommand("bold")}>B</button>
+              <button type="button" className="toolButton italicTool" title="Italique" onClick={() => runEditorCommand("italic")}>I</button>
+              <button type="button" className="toolButton" title="Liste" onClick={() => runEditorCommand("insertUnorderedList")}>Liste</button>
+              <button type="button" className="toolButton" title="Titre" onClick={() => runEditorCommand("formatBlock", "h2")}>Titre</button>
+              <button type="button" className="toolButton" title="Paragraphe" onClick={() => runEditorCommand("formatBlock", "p")}>Texte</button>
+              <button type="button" className="toolButton" title="Lien" onClick={() => {
+                const url = window.prompt("URL du lien");
+                if (url) runEditorCommand("createLink", url);
+              }}>Lien</button>
+            </div>
+            <div
+              ref={editorRef}
+              className="visualEditor"
+              contentEditable
+              suppressContentEditableWarning
+              role="textbox"
+              aria-label="Message email"
+              onInput={syncEditorContent}
+              onBlur={syncEditorContent}
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+            <div className="editorMeta">
+              <span>{text.length} caracteres texte</span>
+              <span>HTML genere automatiquement</span>
+            </div>
+          </div>
 
           <div className="buttonRow full">
             <button type="button" className="secondaryButton" onClick={saveOrganization} disabled={loadingAction !== null}>
@@ -609,6 +700,7 @@ export function EmailWorkspace({
                 setOrganizationId(organization.id);
                 setOrganizationName(organization.name);
                 loadSenders(organization.id);
+                loadInbox(organization.id);
               }}
             >
               <span>{organization.name}</span>
@@ -644,6 +736,41 @@ export function EmailWorkspace({
         ) : null}
       </article>
 
+      <article id="inbox" className="panel inboxPanel">
+        <div className="panelHeader">
+          <div>
+            <p className="eyebrow">Inbox SaaS</p>
+            <h2>Reponses recues</h2>
+          </div>
+          <button className="iconButton" type="button" onClick={() => loadInbox()} disabled={loadingAction !== null}>
+            {loadingAction === "inbox" ? "Chargement..." : "Recharger"}
+          </button>
+        </div>
+        <div className="inboxHint">
+          Les reponses arrivent ici quand <strong>INBOUND_REPLY_TO_EMAIL</strong> pointe vers une adresse entrante reliee au webhook.
+        </div>
+        <div className="inboxList">
+          {inboundMessages.length ? (
+            inboundMessages.map((message) => (
+              <article className="inboxItem" key={message.id}>
+                <div className="inboxItemHeader">
+                  <strong>{message.subject ?? "Sans sujet"}</strong>
+                  <span>{new Date(message.received_at).toLocaleString()}</span>
+                </div>
+                <div className="inboxAddresses">
+                  <span>De: {message.from_email}</span>
+                  <span>A: {message.to_email}</span>
+                </div>
+                <p>{message.text_body || stripHtml(message.html_body ?? "") || "Message sans contenu texte."}</p>
+              </article>
+            ))
+          ) : (
+            <div className="emptyInbox">
+              Aucune reponse pour cette organisation. Configure le webhook entrant puis clique sur Recharger.
+            </div>
+          )}
+        </div>
+      </article>
       <article id="api" className="panel">
         <div className="panelHeader">
           <div>
@@ -679,4 +806,7 @@ async function readJsonResponse(response: Response) {
       error: text
     };
   }
+}
+function stripHtml(value: string) {
+  return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
