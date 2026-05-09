@@ -228,8 +228,8 @@ export function EmailWorkspace({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: organizationId,
-          name: organizationName
+          id: organizationId.trim(),
+          name: organizationName.trim()
         })
       });
       const data = await readJsonResponse(response);
@@ -374,10 +374,10 @@ export function EmailWorkspace({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          organizationId,
+          organizationId: organizationId.trim(),
           provider,
-          email: from,
-          displayName,
+          email: from.trim().toLowerCase(),
+          displayName: displayName.trim() || undefined,
           configureProvider: true
         })
       });
@@ -420,7 +420,7 @@ export function EmailWorkspace({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          organizationId,
+          organizationId: organizationId.trim(),
           email: from
         })
       });
@@ -468,15 +468,15 @@ export function EmailWorkspace({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          organizationId,
+          organizationId: organizationId.trim(),
           provider,
-          from,
+          from: from.trim().toLowerCase(),
           to: to.split(",").map((recipient: string) => recipient.trim()).filter(Boolean),
           subject,
           html,
           text,
           audience,
-          replyTo: from
+          replyTo: from.trim().toLowerCase()
         })
       });
       const data = await readJsonResponse(response);

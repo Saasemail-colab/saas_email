@@ -34,7 +34,9 @@ export async function POST(request: Request) {
   const parsed = organizationSchema.safeParse(await request.json().catch(() => ({})));
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid payload", details: parsed.error.flatten() }, { status: 400 });
+    const details = parsed.error.flatten();
+    const fieldErrors = Object.entries(details.fieldErrors).flatMap(([field, errors]) => (errors ?? []).map((error) => `${field}: ${error}`));
+    return NextResponse.json({ error: fieldErrors.length ? `Payload invalide. ${fieldErrors.join(" | ")}` : "Payload invalide." }, { status: 400 });
   }
 
   const supabase = getServerSupabase();

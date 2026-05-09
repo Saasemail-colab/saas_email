@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     const parsed = registerSenderSchema.safeParse(await request.json());
 
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload", details: parsed.error.flatten() }, { status: 400 });
+      return NextResponse.json({ error: formatZodError(parsed.error.flatten()) }, { status: 400 });
     }
 
     const payload = parsed.data;
@@ -161,4 +161,11 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({ senders: data ?? [] });
+}
+
+function formatZodError(details: z.inferFlattenedErrors<typeof registerSenderSchema>) {
+  const fieldErrors = Object.entries(details.fieldErrors)
+    .flatMap(([field, errors]) => (errors ?? []).map((error) => `${field}: ${error}`));
+
+  return fieldErrors.length ? `Payload invalide. ${fieldErrors.join(" | ")}` : "Payload invalide.";
 }
