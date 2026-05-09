@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type DomainRow = {
   domain: string;
@@ -62,6 +62,7 @@ export function EmailWorkspace({
   const [subject, setSubject] = useState("Bienvenue sur notre plateforme");
   const [html, setHtml] = useState("<p>Bonjour, votre compte est pret.</p>");
   const [text, setText] = useState("Bonjour, votre compte est pret.");
+  const editorRef = useRef<HTMLDivElement | null>(null);
   const [audience, setAudience] = useState<"transactional" | "marketing">("transactional");
   const [senders, setSenders] = useState(initialSenders);
   const [domains, setDomains] = useState(initialDomains);
@@ -106,6 +107,32 @@ export function EmailWorkspace({
     }
   }, []);
 
+  function syncEditorContent() {
+    const content = editorRef.current?.innerHTML ?? "";
+    const plainText = editorRef.current?.innerText ?? "";
+    setHtml(content.trim() ? content : "<p></p>");
+    setText(plainText.trim());
+  }
+
+  function runEditorCommand(command: string, value?: string) {
+    editorRef.current?.focus();
+    document.execCommand(command, false, value);
+    syncEditorContent();
+  }
+
+  function insertTemplate(kind: "welcome" | "followup" | "simple") {
+    const templates = {
+      welcome: "<p>Bonjour,</p><p>Votre compte est pret. Vous pouvez maintenant utiliser la plateforme.</p><p>Cordialement,<br>Equipe support</p>",
+      followup: "<p>Bonjour,</p><p>Nous revenons vers vous concernant votre demande.</p><p>Merci pour votre confiance.</p>",
+      simple: "<p>Bonjour,</p><p>Votre message ici.</p><p>Cordialement,</p>"
+    };
+    const nextHtml = templates[kind];
+    setHtml(nextHtml);
+    setText(stripHtml(nextHtml));
+    if (editorRef.current) {
+      editorRef.current.innerHTML = nextHtml;
+    }
+  }
   async function loginAdmin() {
     setAdminError(null);
 
@@ -557,14 +584,45 @@ export function EmailWorkspace({
             Sujet
             <input value={subject} onChange={(event) => setSubject(event.target.value)} />
           </label>
-          <label className="full">
-            HTML
-            <textarea value={html} onChange={(event) => setHtml(event.target.value)} rows={5} />
-          </label>
-          <label className="full">
-            Texte simple
-            <textarea value={text} onChange={(event) => setText(event.target.value)} rows={3} />
-          </label>
+          <div className="editorShell full">
+            <div className="editorTopline">
+              <div>
+                <span className="fieldLabel">Message</span>
+                <strong>Editeur visuel</strong>
+              </div>
+              <div className="templateGroup" aria-label="Modeles rapides">
+                <button type="button" className="chipButton" onClick={() => insertTemplate("welcome")}>Bienvenue</button>
+                <button type="button" className="chipButton" onClick={() => insertTemplate("followup")}>Relance</button>
+                <button type="button" className="chipButton" onClick={() => insertTemplate("simple")}>Simple</button>
+              </div>
+            </div>
+            <div className="editorToolbar" aria-label="Outils de mise en forme">
+              <button type="button" className="toolButton" title="Gras" onClick={() => runEditorCommand("bold")}>B</button>
+              <button type="button" className="toolButton italicTool" title="Italique" onClick={() => runEditorCommand("italic")}>I</button>
+              <button type="button" className="toolButton" title="Liste" onClick={() => runEditorCommand("insertUnorderedList")}>Liste</button>
+              <button type="button" className="toolButton" title="Titre" onClick={() => runEditorCommand("formatBlock", "h2")}>Titre</button>
+              <button type="button" className="toolButton" title="Paragraphe" onClick={() => runEditorCommand("formatBlock", "p")}>Texte</button>
+              <button type="button" className="toolButton" title="Lien" onClick={() => {
+                const url = window.prompt("URL du lien");
+                if (url) runEditorCommand("createLink", url);
+              }}>Lien</button>
+            </div>
+            <div
+              ref={editorRef}
+              className="visualEditor"
+              contentEditable
+              suppressContentEditableWarning
+              role="textbox"
+              aria-label="Message email"
+              onInput={syncEditorContent}
+              onBlur={syncEditorContent}
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+            <div className="editorMeta">
+              <span>{text.length} caracteres texte</span>
+              <span>HTML genere automatiquement</span>
+            </div>
+          </div>
 
           <div className="buttonRow full">
             <button type="button" className="secondaryButton" onClick={saveOrganization} disabled={loadingAction !== null}>
@@ -679,4 +737,7 @@ async function readJsonResponse(response: Response) {
       error: text
     };
   }
+}
+function stripHtml(value: string) {
+  return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
