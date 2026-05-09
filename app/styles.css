@@ -1,0 +1,347 @@
+:root {
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --text: #18202b;
+  --muted: #657184;
+  --line: #dbe1ea;
+  --brand: #2563eb;
+  --brand-dark: #1e40af;
+  --danger: #b42318;
+  --success: #067647;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+.primaryButton,
+.secondaryButton,
+.gmailButton {
+  align-items: center;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 10px 14px;
+  text-decoration: none;
+}
+
+button,
+.primaryButton {
+  background: var(--brand);
+  color: white;
+}
+
+button:hover,
+.primaryButton:hover {
+  background: var(--brand-dark);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.secondaryButton,
+.gmailButton,
+.iconButton {
+  background: #eef2f8;
+  color: var(--text);
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #111827;
+  color: white;
+  padding: 24px;
+}
+
+.brand {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.brandMark {
+  align-items: center;
+  background: var(--brand);
+  border-radius: 8px;
+  display: grid;
+  font-weight: 800;
+  height: 40px;
+  place-items: center;
+  width: 40px;
+}
+
+.brand span,
+.nav a,
+.eyebrow,
+small {
+  color: var(--muted);
+}
+
+.nav {
+  display: grid;
+  gap: 8px;
+}
+
+.nav a {
+  border-radius: 8px;
+  color: #cfd6e4;
+  padding: 10px 12px;
+  text-decoration: none;
+}
+
+.nav a.active,
+.nav a:hover {
+  background: #243044;
+  color: white;
+}
+
+.workspace {
+  padding: 28px;
+}
+
+.topbar,
+.panelHeader,
+.buttonRow,
+.adminToolbar,
+.topbarActions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.topbar {
+  margin-bottom: 24px;
+}
+
+.topbar h1 {
+  font-size: 30px;
+  line-height: 1.15;
+  margin: 6px 0 0;
+  max-width: 760px;
+}
+
+.metricGrid,
+.moduleGrid,
+.contentGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.metricGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.contentGrid {
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+}
+
+.wide {
+  grid-row: span 2;
+}
+
+.panel,
+.metric,
+.module,
+.adminGateCard,
+.legalPanel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.metric span,
+.eyebrow,
+.sectionLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.metric strong {
+  display: block;
+  font-size: 26px;
+  margin-top: 8px;
+}
+
+.composeForm,
+.adminGateForm {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 18px;
+}
+
+label {
+  color: var(--muted);
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.formStatus {
+  border-radius: 8px;
+  margin-top: 14px;
+  padding: 12px;
+}
+
+.formStatus[data-tone="success"] {
+  background: #ecfdf3;
+  color: var(--success);
+}
+
+.formStatus[data-tone="error"] {
+  background: #fef3f2;
+  color: var(--danger);
+}
+
+.formStatus[data-tone="info"] {
+  background: #eff6ff;
+  color: var(--brand-dark);
+}
+
+.domainList,
+.providerList {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.domainRow,
+.providerRow,
+.orgRow {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.orgRow {
+  width: 100%;
+}
+
+.statusPill {
+  background: #eef2f8;
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+
+.codeBlock {
+  background: #111827;
+  border-radius: 8px;
+  color: #d1d5db;
+  overflow: auto;
+  padding: 14px;
+}
+
+.adminGate,
+.legalShell {
+  display: grid;
+  min-height: 100vh;
+  padding: 32px;
+  place-items: center;
+}
+
+.adminGateCard,
+.legalHero,
+.legalPanel {
+  max-width: 820px;
+  width: 100%;
+}
+
+.legalHero {
+  margin-bottom: 18px;
+}
+
+.legalHero h1 {
+  font-size: 38px;
+  margin: 8px 0;
+}
+
+.legalBack {
+  color: var(--brand);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.publicFooter {
+  display: flex;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 16px 0;
+}
+
+@media (max-width: 900px) {
+  .shell,
+  .contentGrid,
+  .metricGrid,
+  .composeForm {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
+
+  .topbar,
+  .panelHeader,
+  .buttonRow,
+  .adminToolbar,
+  .topbarActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
