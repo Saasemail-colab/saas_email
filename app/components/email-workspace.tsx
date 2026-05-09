@@ -460,6 +460,19 @@ export function EmailWorkspace({
   }
 
   async function sendMessage() {
+    const nextSubject = subject.trim();
+    const recipients = to.split(",").map((recipient: string) => recipient.trim()).filter(Boolean);
+
+    if (!nextSubject) {
+      setStatus({ tone: "error", text: "Le sujet est obligatoire avant l'envoi." });
+      return;
+    }
+
+    if (!recipients.length) {
+      setStatus({ tone: "error", text: "Ajoute au moins un destinataire valide." });
+      return;
+    }
+
     setLoadingAction("send");
     setStatus({ tone: "info", text: "Envoi du message..." });
 
@@ -471,8 +484,8 @@ export function EmailWorkspace({
           organizationId: organizationId.trim(),
           provider,
           from: from.trim().toLowerCase(),
-          to: to.split(",").map((recipient: string) => recipient.trim()).filter(Boolean),
-          subject,
+          to: recipients,
+          subject: nextSubject,
           html,
           text,
           audience,
